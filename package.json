@@ -1,0 +1,38 @@
+{
+  "name": "resume-builder-automation",
+  "version": "1.0.0",
+  "description": "Automated resume updater and job applicator for Naukri and LinkedIn using Puppeteer",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test tests/**/*.test.js",
+    "scrape:naukri": "node src/scrapers/naukri.js",
+    "scrape:linkedin": "node src/scrapers/linkedin.js",
+    "clean": "rm -rf output/*.pdf generated/*.tex"
+  },
+  "keywords": [
+    "resume",
+    "puppeteer",
+    "job-automation",
+    "naukri",
+    "linkedin",
+    "latex"
+  ],
+  "author": "Sanket Shinde",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^22.0.0",
+    "dotenv": "^16.4.0",
+    "natural": "^6.14.0",
+    "sqlite3": "^5.1.7",
+    "axios": "^1.7.0",
+    "pino": "^8.19.0",
+    "pino-pretty": "^10.3.1"
+  },
+  "devDependencies": {
+    "node-gyp": "^10.1.0"
+  }
+}
+
