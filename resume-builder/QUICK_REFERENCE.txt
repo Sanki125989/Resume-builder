@@ -1,0 +1,192 @@
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                         │
+│        RESUME BUILDER - CORRECT CURL SEQUENCE (NO 401 ERRORS)          │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════
+                        PREREQUISITES (CRITICAL!)
+═══════════════════════════════════════════════════════════════════════════
+
+1. START PUPPETEER SERVICE FIRST:
+
+   Terminal 1:
+   $ cd puppeteer-service
+   $ npm start
+
+   Verify: $ curl http://localhost:3001/health
+   ✅ Should return: {"status":"ok","service":"puppeteer-automation"}
+
+2. BACKEND MUST BE RUNNING:
+
+   Terminal 2:
+   $ cd backend
+   $ ./mvnw spring-boot:run
+
+   ✅ Backend runs on port 8085
+
+═══════════════════════════════════════════════════════════════════════════
+                        STEP-BY-STEP SEQUENCE
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 1: REGISTER USER (First time only)
+────────────────────────────────────────────────────────────────────────────
+curl --location 'http://localhost:8085/api/auth/register' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "email": "shindesanket497@gmail.com",
+    "password": "YourPassword123",
+    "name": "Sanket Shinde",
+    "phone": "+911234567890",
+    "skills": "Java, Spring Boot, React, MySQL, Docker",
+    "experience": "Software Engineer",
+    "education": "B.Tech Computer Science"
+}'
+
+✅ Success: User registered
+⚠️  "User already exists" → Skip to Step 2
+
+
+STEP 2: LOGIN TO LINKEDIN
+────────────────────────────────────────────────────────────────────────────
+curl -i --location 'http://localhost:8085/api/auth/login/linkedin' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "email": "shindesanket497@gmail.com",
+    "linkedinEmail": "shindesanket497@gmail.com",
+    "linkedinPassword": "Sanketlinkedin@220798"
+}'
+
+NOTE: Use -i flag to see response headers with JSESSIONID
+
+✅ Success: LinkedIn login successful
+❌ 401 Unauthorized → Check user is registered
+❌ Connection refused → Check puppeteer service is running
+
+
+STEP 3: LOGIN TO NAUKRI (Optional)
+────────────────────────────────────────────────────────────────────────────
+curl -i --location 'http://localhost:8085/api/auth/login/naukri' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "email": "shindesanket497@gmail.com",
+    "naukriEmail": "your.naukri@email.com",
+    "naukriPassword": "your_naukri_password"
+}'
+
+
+STEP 4: USE OTHER ENDPOINTS (with session if needed)
+────────────────────────────────────────────────────────────────────────────
+# Get jobs
+curl --location 'http://localhost:8085/api/jobs' \
+--header 'Content-Type: application/json' \
+--header 'Cookie: JSESSIONID=YOUR_SESSION_ID'
+
+# Generate resume
+curl --location 'http://localhost:8085/api/resume/generate' \
+--header 'Content-Type: application/json' \
+--header 'Cookie: JSESSIONID=YOUR_SESSION_ID' \
+--data '"1"'
+
+# Start automation
+curl --location 'http://localhost:8085/api/automation/start' \
+--header 'Content-Type: application/json' \
+--header 'Cookie: JSESSIONID=YOUR_SESSION_ID' \
+--data '{
+    "userId": 1,
+    "portal": "linkedin",
+    "maxJobs": 10
+}'
+
+═══════════════════════════════════════════════════════════════════════════
+                        COMMON ERRORS & SOLUTIONS
+═══════════════════════════════════════════════════════════════════════════
+
+ERROR: Connection refused (port 3001)
+────────────────────────────────────────────────────────────────────────────
+CAUSE:  Puppeteer service not running
+FIX:    cd puppeteer-service && npm start
+
+
+ERROR: 401 Unauthorized
+────────────────────────────────────────────────────────────────────────────
+CAUSE:  User not registered or invalid email
+FIX:    1. Register user first (Step 1)
+        2. Ensure email matches in both register and login requests
+
+
+ERROR: User already exists
+────────────────────────────────────────────────────────────────────────────
+CAUSE:  User already registered
+FIX:    Skip registration, proceed to Step 2 (login)
+
+
+ERROR: npm install fails (natural@^6.14.0)
+────────────────────────────────────────────────────────────────────────────
+CAUSE:  Running npm install in wrong directory
+FIX:    cd puppeteer-service  (NOT root directory)
+        npm install
+
+
+ERROR: TypeScript compilation errors
+────────────────────────────────────────────────────────────────────────────
+CAUSE:  TypeScript type errors (already fixed)
+FIX:    cd puppeteer-service
+        npm run build
+
+═══════════════════════════════════════════════════════════════════════════
+                        VERIFICATION COMMANDS
+═══════════════════════════════════════════════════════════════════════════
+
+Check Puppeteer Service:
+$ curl http://localhost:3001/health
+
+Check Backend Service:
+$ curl http://localhost:8085/actuator/health
+or
+$ ps aux | grep java | grep ResumeBuilder
+
+Check if services are listening:
+$ lsof -i :3001   # Puppeteer
+$ lsof -i :8085   # Backend
+
+═══════════════════════════════════════════════════════════════════════════
+                        QUICK START SCRIPT
+═══════════════════════════════════════════════════════════════════════════
+
+#!/bin/bash
+# save as start-all.sh
+
+# Start puppeteer service
+cd puppeteer-service
+npm start &
+PUPPETEER_PID=$!
+
+# Wait for it to start
+sleep 5
+
+# Verify
+curl http://localhost:3001/health
+
+echo "✅ Puppeteer service running (PID: $PUPPETEER_PID)"
+echo "✅ Backend should be running on port 8085"
+echo ""
+echo "Now you can run the cURL commands!"
+
+═══════════════════════════════════════════════════════════════════════════
+                        IMPORTANT REMINDERS
+═══════════════════════════════════════════════════════════════════════════
+
+✅ ALWAYS start puppeteer service BEFORE making LinkedIn/Naukri login calls
+✅ ALWAYS register user BEFORE trying to login
+✅ Use -i flag with curl to see response headers (JSESSIONID)
+✅ Port 8085 for backend, NOT 8081
+✅ Email in login must match registered email
+
+═══════════════════════════════════════════════════════════════════════════
+
+For detailed documentation, see:
+- AUTHENTICATION_GUIDE.md
+- POSTMAN_CURLS.md
+- TROUBLESHOOTING.md
+

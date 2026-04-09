@@ -9,6 +9,7 @@ com/resumebuilder/model/Application.class
 com/resumebuilder/controller/AuthController.class
 com/resumebuilder/service/JobApplicationAutomationService.class
 com/resumebuilder/service/PuppeteerService.class
+com/resumebuilder/config/SecurityConfig.class
 com/resumebuilder/service/ApplicationService.class
 com/resumebuilder/service/ResumeGenerationService.class
 com/resumebuilder/service/AuthService.class

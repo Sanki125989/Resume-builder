@@ -1,7 +1,7 @@
-import puppeteer, { Page } from 'puppeteer';
+import puppeteer, { Browser, Page } from 'puppeteer';
 
 class AutomationService {
-    private browser: puppeteer.Browser | null = null;
+    private browser: Browser | null = null;
 
     async init() {
         this.browser = await puppeteer.launch({ headless: true });
@@ -41,7 +41,7 @@ class AutomationService {
         // Implement logic to extract job description from the page
         const jobDescription = await page.evaluate(() => {
             const descriptionElement = document.querySelector('.job-description');
-            return descriptionElement ? descriptionElement.innerText : '';
+            return descriptionElement ? (descriptionElement as HTMLElement).innerText : '';
         });
         return jobDescription;
     }

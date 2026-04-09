@@ -32,7 +32,8 @@ app.post('/api/login', async (req, res) => {
         res.json({ success, portal });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ error: 'Login failed', message: error.message });
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        res.status(500).json({ error: 'Login failed', message });
     }
 });
 
@@ -53,7 +54,8 @@ app.post('/api/extract-job', async (req, res) => {
         res.json({ description, jobUrl });
     } catch (error) {
         console.error('Extract job error:', error);
-        res.status(500).json({ error: 'Failed to extract job description', message: error.message });
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        res.status(500).json({ error: 'Failed to extract job description', message });
     }
 });
 
@@ -75,7 +77,8 @@ app.get('/api/fetch-jobs', async (req, res) => {
         res.json({ jobs, count: jobs.length, portal });
     } catch (error) {
         console.error('Fetch jobs error:', error);
-        res.status(500).json({ error: 'Failed to fetch jobs', message: error.message });
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        res.status(500).json({ error: 'Failed to fetch jobs', message });
     }
 });
 
@@ -96,7 +99,8 @@ app.post('/api/apply', async (req, res) => {
         res.json({ success, jobUrl, portal });
     } catch (error) {
         console.error('Apply job error:', error);
-        res.status(500).json({ error: 'Failed to apply to job', message: error.message });
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        res.status(500).json({ error: 'Failed to apply to job', message });
     }
 });
 
