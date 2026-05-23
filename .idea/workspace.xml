@@ -4,29 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ed7c1d00-e2aa-4f67-87f7-ec5b9ad1e0b3" name="Changes" comment="Add configuration files and ignore patterns for project setup">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SETUP_GUIDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/SETUP_GUIDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/backend/src/main/java/com/resumebuilder/service/NaukriResumeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/src/main/java/com/resumebuilder/service/NaukriResumeService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/src/App.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/src/components/ApplicationTracker.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/src/components/JobList.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/src/components/LoginForm.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/src/components/ResumeEditor.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/src/index.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/src/services/api.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/src/services/auth.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/src/styles/App.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/src/types/index.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/frontend/tsconfig.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/puppeteer-service/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/puppeteer-service/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/resume-builder/puppeteer-service/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/puppeteer-service/src/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run-resume-upload.sh" beforeDir="false" afterPath="$PROJECT_DIR$/run-resume-upload.sh" afterDir="false" />
-    </list>
+    <list default="true" id="ed7c1d00-e2aa-4f67-87f7-ec5b9ad1e0b3" name="Changes" comment="Implement HTML to PDF conversion endpoint using Puppeteer and add fallback for LaTeX compilation" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -83,30 +61,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;updated-new&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/sanket/Documents/Personal documents/Resume-builder&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.projectsettings.compiler.javacompiler&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "updated-new",
+    "junie.onboarding.icon.badge.shown": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/home/sanket/Documents/Personal documents/Resume-builder",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "reference.projectsettings.compiler.javacompiler",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "C:\\Users\\Admin\\Resume-builder\\resume-builder\\puppeteer-service\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -134,7 +113,15 @@
       <option name="project" value="LOCAL" />
       <updated>1779523686980</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Implement HTML to PDF conversion endpoint using Puppeteer and add fallback for LaTeX compilation">
+      <option name="closed" value="true" />
+      <created>1779537444039</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1779537444040</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -142,7 +129,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Add configuration files and ignore patterns for project setup" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add configuration files and ignore patterns for project setup" />
+    <MESSAGE value="Implement HTML to PDF conversion endpoint using Puppeteer and add fallback for LaTeX compilation" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implement HTML to PDF conversion endpoint using Puppeteer and add fallback for LaTeX compilation" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
