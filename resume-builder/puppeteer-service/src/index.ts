@@ -1,111 +1,102 @@
 import express from 'express';
-import { loginNaukri, fetchNaukriJobs, extractNaukriJobDescription, applyNaukriJob } from './scrapers/naukri';
-import { loginLinkedIn, fetchLinkedInJobs, extractLinkedInJobDescription, applyLinkedInJob } from './scrapers/linkedin';
-import { Browser } from 'puppeteer';
+import puppeteer from 'puppeteer';
+import { scrapeRecommendedJob, uploadResumeToNaukriAndLogout } from './scrapers/naukri';
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(express.json());
 
-let activeBrowser: Browser | null = null;
-
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'puppeteer-automation' });
 });
 
-// Login endpoint
-app.post('/api/login', async (req, res) => {
+/**
+ * Login to Naukri → Recommended Jobs → Applies tab → 1st job
+ * Returns: { jobDescription, keySkills[] }
+ */
+app.post('/api/naukri/scrape-job', async (req, res) => {
     try {
-        const { portal, username, password } = req.body;
-        let success = false;
-
-        if (portal === 'naukri') {
-            success = await loginNaukri(username, password);
-        } else if (portal === 'linkedin') {
-            success = await loginLinkedIn(username, password);
-        } else {
-            return res.status(400).json({ error: 'Invalid portal' });
+        const { username, password } = req.body;
+        if (!username || !password) {
+            return res.status(400).json({ error: 'username and password are required' });
         }
-
-        res.json({ success, portal });
+        const result = await scrapeRecommendedJob(username, password);
+        res.json(result);
     } catch (error) {
-        console.error('Login error:', error);
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        res.status(500).json({ error: 'Login failed', message });
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('[/api/naukri/scrape-job]', message);
+        res.status(500).json({ error: 'Failed to scrape recommended job', message });
     }
 });
 
-// Extract job description
-app.post('/api/extract-job', async (req, res) => {
+/**
+ * Upload PDF to Naukri profile section and logout
+ * Body: { resumePath: "/absolute/path/to/Sanket_Resume_DD_MM_YYYY.pdf" }
+ * Returns: { success: boolean }
+ */
+app.post('/api/naukri/upload-resume', async (req, res) => {
     try {
-        const { jobUrl, portal } = req.body;
-        let description = '';
-
-        if (portal === 'naukri') {
-            description = await extractNaukriJobDescription(jobUrl);
-        } else if (portal === 'linkedin') {
-            description = await extractLinkedInJobDescription(jobUrl);
-        } else {
-            return res.status(400).json({ error: 'Invalid portal' });
+        const { resumePath } = req.body;
+        if (!resumePath) {
+            return res.status(400).json({ error: 'resumePath is required' });
         }
-
-        res.json({ description, jobUrl });
+        const success = await uploadResumeToNaukriAndLogout(resumePath);
+        res.json({ success });
     } catch (error) {
-        console.error('Extract job error:', error);
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        res.status(500).json({ error: 'Failed to extract job description', message });
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('[/api/naukri/upload-resume]', message);
+        res.status(500).json({ error: 'Failed to upload resume', message });
     }
 });
 
-// Fetch jobs
-app.get('/api/fetch-jobs', async (req, res) => {
+/**
+ * Compile HTML content to a PDF file using Puppeteer
+ * Body: { html: "...", outputPath: "..." }
+ * Returns: { success: boolean, outputPath: "..." }
+ */
+app.post('/api/naukri/html-to-pdf', async (req, res) => {
+    let pdfBrowser = null;
     try {
-        const portal = req.query.portal as string;
-        const limit = parseInt(req.query.limit as string) || 10;
-        let jobs: any[] = [];
-
-        if (portal === 'naukri') {
-            jobs = await fetchNaukriJobs(limit);
-        } else if (portal === 'linkedin') {
-            jobs = await fetchLinkedInJobs(limit);
-        } else {
-            return res.status(400).json({ error: 'Invalid portal' });
+        const { html, outputPath } = req.body;
+        if (!html || !outputPath) {
+            return res.status(400).json({ error: 'html and outputPath are required' });
         }
 
-        res.json({ jobs, count: jobs.length, portal });
+        console.log('[/api/naukri/html-to-pdf] Launching browser to print PDF...');
+        pdfBrowser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        const pdfPage = await pdfBrowser.newPage();
+        await pdfPage.setContent(html, { waitUntil: 'domcontentloaded' });
+
+        await pdfPage.pdf({
+            path: outputPath,
+            format: 'letter',
+            margin: {
+                top: '0.6in',
+                bottom: '0.6in',
+                left: '0.6in',
+                right: '0.6in'
+            },
+            printBackground: true
+        });
+
+        console.log('[/api/naukri/html-to-pdf] PDF generated successfully at:', outputPath);
+        res.json({ success: true, outputPath });
     } catch (error) {
-        console.error('Fetch jobs error:', error);
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        res.status(500).json({ error: 'Failed to fetch jobs', message });
-    }
-});
-
-// Apply to job
-app.post('/api/apply', async (req, res) => {
-    try {
-        const { portal, jobUrl, resumePath } = req.body;
-        let success = false;
-
-        if (portal === 'naukri') {
-            success = await applyNaukriJob(jobUrl, resumePath);
-        } else if (portal === 'linkedin') {
-            success = await applyLinkedInJob(jobUrl, resumePath);
-        } else {
-            return res.status(400).json({ error: 'Invalid portal' });
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('[/api/naukri/html-to-pdf] error:', message);
+        res.status(500).json({ error: 'Failed to generate PDF from HTML', message });
+    } finally {
+        if (pdfBrowser) {
+            await pdfBrowser.close().catch(() => {});
         }
-
-        res.json({ success, jobUrl, portal });
-    } catch (error) {
-        console.error('Apply job error:', error);
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        res.status(500).json({ error: 'Failed to apply to job', message });
     }
 });
 
 app.listen(PORT, () => {
     console.log(`Puppeteer service running on port ${PORT}`);
 });
-
-export { activeBrowser };

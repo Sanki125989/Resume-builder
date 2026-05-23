@@ -1,0 +1,98 @@
+# ─── code-review-graph ───────────────────────────────────────────────────────
+.code-review-graph/
+
+# ─── Java / Maven (backend) ──────────────────────────────────────────────────
+resume-builder/backend/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# ─── Sensitive configuration ─────────────────────────────────────────────────
+# Contains DB credentials, JWT secret — never commit these
+resume-builder/backend/src/main/resources/application.properties
+resume-builder/backend/src/test/resources/application.properties
+# Use application.properties.example as a template instead
+
+# ─── Node.js (puppeteer-service) ───────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+
+# Puppeteer-service compiled output
+resume-builder/puppeteer-service/dist/
+
+# Environment / secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ─── Generated resumes ───────────────────────────────────────────────────────
+resumes/
+
+# ─── LaTeX build artifacts ───────────────────────────────────────────────────
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+.*.lb
+*.fdb_latexmk
+*.synctex.gz
+*.synctex(busy)
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+*.pdf
+
+# ─── IntelliJ IDEA ───────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# ─── VS Code (local-only settings) ───────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/*.code-workspace
+
+# ─── AI platform configs (machine-local) ─────────────────────────────────────
+.cursor/
+.opencode.json
+.windsurfrules
+.cursorrules
+CLAUDE.md
+GEMINI.md
+AGENTS.md
+.claude/
+
+# ─── OS generated ────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+logs/
+*.log

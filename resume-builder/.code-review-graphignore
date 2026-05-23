@@ -1,0 +1,22 @@
+# Maven build output
+target/
+
+# Node.js dependencies
+node_modules/
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Generated resumes directory
+../resumes/
+
+# IDE / OS
+.idea/
+.DS_Store
+*.iml

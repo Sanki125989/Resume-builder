@@ -56,11 +56,6 @@ mvn spring-boot:run
 cd resume-builder/puppeteer-service
 npm install
 npm run dev
-
-# Terminal 3 - Frontend (if needed)
-cd resume-builder/frontend
-npm install
-npm start
 ```
 
 ## Testing the Integration
