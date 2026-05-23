@@ -1,40 +1,35 @@
-\documentclass[letterpaper,11pt]{article}
+\documentclass[letterpaper,10pt]{article}
 
 \usepackage{latexsym}
 \usepackage[empty]{fullpage}
 \usepackage{titlesec}
-\usepackage{marvosym}
 \usepackage[usenames,dvipsnames]{color}
 \usepackage{verbatim}
 \usepackage{enumitem}
 \usepackage[hidelinks]{hyperref}
 \usepackage{fancyhdr}
-\usepackage[english]{babel}
 \usepackage{tabularx}
-
-\pagestyle{fancy}
-\fancyhf{}
-\fancyfoot{}
-\renewcommand{\headrulewidth}{0pt}
-\renewcommand{\footrulewidth}{0pt}
+\usepackage[T1]{fontenc}
 
 % Adjust margins
 \addtolength{\oddsidemargin}{-0.5in}
 \addtolength{\evensidemargin}{-0.5in}
 \addtolength{\textwidth}{1in}
-\addtolength{\topmargin}{-.5in}
-\addtolength{\textheight}{1.0in}
+\addtolength{\topmargin}{-.62in}
+\addtolength{\textheight}{1.22in}
 
 \urlstyle{same}
 
 \raggedbottom
 \raggedright
 \setlength{\tabcolsep}{0in}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=0.18in, itemsep=1pt, topsep=2pt}
 
 % Sections formatting
 \titleformat{\section}{
-  \vspace{-4pt}\scshape\raggedright\large
-}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+  \vspace{-3pt}\bfseries\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-4pt}]
 
 % Custom commands
 \newcommand{\resumeItem}[1]{
@@ -46,8 +41,8 @@
 \newcommand{\resumeSubheading}[4]{
   \vspace{-2pt}\item
     \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
-      \textbf{#1} & #2 \\
-      \textit{\small#3} & \textit{\small #4} \\
+      \textbf{#1} & \small #2 \\
+      \small #3 & \small #4 \\
     \end{tabular*}\vspace{-7pt}
 }
 
@@ -68,10 +63,11 @@
 \newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
 
 \renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+\renewcommand\labelitemi{--}
 
 \newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
 \newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
-\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.18in]}
 \newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
 
 %-------------------------------------------
@@ -81,10 +77,10 @@
 
 %----------HEADING----------
 \begin{center}
-    \textbf{\Huge \scshape {{NAME}}} \\ \vspace{1pt}
-    \small {{PHONE}} $|$ \href{mailto:{{EMAIL}}}{{{EMAIL}}} $|$ 
-    \href{{{LINKEDIN}}}{LinkedIn} $|$
-    \href{{{GITHUB}}}{GitHub}
+    {\Huge \textbf{{{NAME}}}} \\ \vspace{2pt}
+    \small {{HEADLINE}} \\ \vspace{3pt}
+    \small {{PHONE}} \quad $|$ \quad \href{mailto:{{EMAIL}}}{{{EMAIL}}} \quad $|$ \quad
+    \href{{{LINKEDIN}}}{{{LINKEDIN_LABEL}}}
 \end{center}
 
 %-----------SUMMARY-----------
@@ -112,10 +108,7 @@
   \resumeSubHeadingListEnd
 
 %-----------PROJECTS-----------
-\section{Projects}
-    \resumeSubHeadingListStart
-      {{PROJECTS}}
-    \resumeSubHeadingListEnd
+{{PROJECT_SECTION}}
 
 %-------------------------------------------
 \end{document}

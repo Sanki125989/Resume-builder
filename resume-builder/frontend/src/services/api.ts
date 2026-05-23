@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api'; // Adjust the base URL as needed
+const API_BASE_URL = 'http://localhost:8085/api';
 
 export const fetchJobs = async () => {
     try {
@@ -12,7 +12,7 @@ export const fetchJobs = async () => {
     }
 };
 
-export const applyForJob = async (jobId, resumeData) => {
+export const applyForJob = async (jobId: number, resumeData: unknown) => {
     try {
         const response = await axios.post(`${API_BASE_URL}/apply`, {
             jobId,
@@ -25,12 +25,26 @@ export const applyForJob = async (jobId, resumeData) => {
     }
 };
 
-export const updateResume = async (resumeData) => {
+export const updateResume = async (resumeData: unknown) => {
     try {
-        const response = await axios.put(`${API_BASE_URL}/resume`, resumeData);
+        const response = await axios.put(`${API_BASE_URL}/resume/update`, resumeData);
         return response.data;
     } catch (error) {
         console.error('Error updating resume:', error);
+        throw error;
+    }
+};
+
+export const generateResume = async (content: string, jobDescription = '', jobTitle = '') => {
+    try {
+        const response = await axios.post(`${API_BASE_URL}/resume/generate`, {
+            content,
+            jobDescription,
+            jobTitle,
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error generating resume:', error);
         throw error;
     }
 };

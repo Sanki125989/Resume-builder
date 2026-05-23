@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchJobDescription, updateResume } from '../services/api';
+import { generateResume } from '../services/api';
 import { Job } from '../types';
 
 const ResumeEditor: React.FC<{ selectedJob: Job }> = ({ selectedJob }) => {
@@ -7,13 +7,7 @@ const ResumeEditor: React.FC<{ selectedJob: Job }> = ({ selectedJob }) => {
 
     useEffect(() => {
         if (selectedJob) {
-            fetchJobDescription(selectedJob.id)
-                .then(description => {
-                    setResumeContent(description);
-                })
-                .catch(error => {
-                    console.error('Error fetching job description:', error);
-                });
+            setResumeContent(selectedJob.description || '');
         }
     }, [selectedJob]);
 
@@ -22,18 +16,18 @@ const ResumeEditor: React.FC<{ selectedJob: Job }> = ({ selectedJob }) => {
     };
 
     const handleSave = () => {
-        updateResume(selectedJob.id, resumeContent)
+        generateResume(resumeContent, selectedJob.description, selectedJob.title)
             .then(() => {
-                alert('Resume updated successfully!');
+                alert('Resume generated successfully!');
             })
             .catch(error => {
-                console.error('Error updating resume:', error);
+                console.error('Error generating resume:', error);
             });
     };
 
     return (
         <div className="resume-editor">
-            <h2>Edit Resume for {selectedJob.title}</h2>
+            <h2>Generate Resume for {selectedJob.title}</h2>
             <textarea
                 value={resumeContent}
                 onChange={handleChange}
