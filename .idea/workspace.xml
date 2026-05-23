@@ -5,7 +5,37 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ed7c1d00-e2aa-4f67-87f7-ec5b9ad1e0b3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/resume-builder/backend/.idea/copilotDiffState.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/resume-builder/backend/COMPILATION_FIX_COMPLETE.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/resume-builder/backend/COMPLETE_FIX_SUMMARY.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/resume-builder/backend/DATABASE_MIGRATION_INSTRUCTIONS.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/resume-builder/backend/FINAL_FIX_COMPLETE.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/resume-builder/backend/RUN_THIS_NOW.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/resume-builder/backend/migration_schema.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/resume-builder/backend/src/main/java/com/resumebuilder/model/GenerateResumeRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/resume-builder/backend/test_endpoints.bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/AUTHENTICATION_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/LINKEDIN_TIMEOUT_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/POSTMAN_CURLS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/src/main/java/com/resumebuilder/controller/ResumeController.java" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/src/main/java/com/resumebuilder/controller/ResumeController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/src/main/java/com/resumebuilder/model/Resume.java" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/src/main/java/com/resumebuilder/model/Resume.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/src/main/java/com/resumebuilder/service/ResumeGenerationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/src/main/java/com/resumebuilder/service/ResumeGenerationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/src/main/resources/templates/resume-template.tex" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/src/main/resources/templates/resume-template.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/target/classes/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/target/classes/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/controller/AutomationController.class" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/controller/AutomationController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/controller/ResumeController.class" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/controller/ResumeController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/model/Resume.class" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/model/Resume.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/ApplicationService.class" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/ApplicationService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/AuthService.class" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/AuthService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/JobApplicationAutomationService.class" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/JobApplicationAutomationService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/JobScrapingService.class" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/JobScrapingService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/PuppeteerService.class" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/PuppeteerService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/ResumeGenerationService.class" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/target/classes/com/resumebuilder/service/ResumeGenerationService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resume-builder/backend/target/classes/templates/resume-template.tex" beforeDir="false" afterPath="$PROJECT_DIR$/resume-builder/backend/target/classes/templates/resume-template.tex" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -15,6 +45,7 @@
   <component name="CopilotPersistence">
     <persistenceIdMap>
       <entry key="_/home/sanket/Documents/Backup/coursera/personal/Resume-builder" value="3ByG3psW60VB5H3JKHUQto19ASO" />
+      <entry key="_C:/Users/Admin/Resume-builder" value="3CAsBzhLeGXV5v0qSMTp9WXxCdj" />
     </persistenceIdMap>
   </component>
   <component name="CopilotUserSelectedChatMode">
@@ -29,18 +60,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "sanket-shinde497"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;sanket-shinde497&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Sanki125989/Resume-builder.git",
-    "accountId": "d81b5c84-a22c-4551-bca8-ff5776b669bc"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Sanki125989/Resume-builder.git&quot;,
+    &quot;accountId&quot;: &quot;d81b5c84-a22c-4551-bca8-ff5776b669bc&quot;
   }
-}]]></component>
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -48,35 +79,38 @@
   <component name="PackageJsonUpdateNotifier">
     <dismissed value="$PROJECT_DIR$/package.json" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 4
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
   <component name="ProjectId" id="3ByG3psW60VB5H3JKHUQto19ASO" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "junie.onboarding.icon.badge.shown": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/home/sanket/Documents/Backup/coursera/personal/Resume-builder/resume-builder/backend",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "to.speed.mode.migration.done": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Admin/Resume-builder&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.projectsettings.compiler.javacompiler&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="ed7c1d00-e2aa-4f67-87f7-ec5b9ad1e0b3" name="Changes" comment="" />
@@ -84,6 +118,9 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1775453700312</updated>
+      <workItem from="1775839578526" duration="3698000" />
+      <workItem from="1775913231449" duration="1951000" />
+      <workItem from="1777116253428" duration="359000" />
     </task>
     <servers />
   </component>

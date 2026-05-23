@@ -93,23 +93,33 @@ public class JobApplicationAutomationService {
             Resume resume = resumeGenerationService.generateTailoredResume(userId, job.getId(), job);
             logger.info("Generated resume for job: {}", job.getTitle());
 
+            if (resume.getPdfPath() == null || !resume.getPdfPath().toLowerCase().endsWith(".pdf")) {
+                logger.error("PDF resume was not generated for job: {}. Skipping auto-apply.", job.getTitle());
+                recordApplication(userId, job, resume, "FAILED_PDF_GENERATION");
+                return;
+            }
+
             // Step 3: Apply for the job
             boolean applied = applyToJob(job, resume, portal);
 
             // Step 4: Record application
-            Application application = new Application();
-            application.setUserId(userId);
-            application.setJobId(job.getId());
-            application.setResumeId(resume.getId());
-            application.setStatus(applied ? "APPLIED" : "FAILED");
-            application.setAppliedDate(LocalDateTime.now().toString());
-            applicationService.submitApplication(application);
+            recordApplication(userId, job, resume, applied ? "APPLIED" : "FAILED");
 
             logger.info("Job application {} for: {}", applied ? "successful" : "failed", job.getTitle());
 
         } catch (Exception e) {
             logger.error("Error processing job application: ", e);
         }
+    }
+
+    private void recordApplication(Long userId, Job job, Resume resume, String status) {
+        Application application = new Application();
+        application.setUserId(userId);
+        application.setJobId(job.getId());
+        application.setResumeId(resume.getId());
+        application.setStatus(status);
+        application.setAppliedDate(LocalDateTime.now().toString());
+        applicationService.submitApplication(application);
     }
 
     /**

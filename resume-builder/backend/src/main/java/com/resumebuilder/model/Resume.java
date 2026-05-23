@@ -10,10 +10,13 @@ public class Resume {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "created_at")
+    private String createdAt;
+
+    @Column(name = "user_id", nullable = true)
     private Long userId;
 
-    @Column(name = "job_id")
+    @Column(name = "job_id", nullable = true)
     private Long jobId;
 
     @Column(name = "content", columnDefinition = "TEXT")
@@ -69,6 +72,14 @@ public class Resume {
 
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
     }
 
     public Long getJobId() {
