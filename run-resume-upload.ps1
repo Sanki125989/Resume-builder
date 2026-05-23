@@ -1,8 +1,8 @@
-# ──────────────────────────────────────────────────────────────────────────────
+# ==============================================================================
 # run-resume-upload.ps1
-# Automates: Start Services → Login Naukri → update resume → upload → Kill Services
+# Automates: Start Services -> Login Naukri -> update resume -> upload -> Kill Services
 # Designed for Windows Task Scheduler
-# ──────────────────────────────────────────────────────────────────────────────
+# ==============================================================================
 
 $PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $WORKSPACE = $PSScriptRoot
@@ -52,7 +52,7 @@ function Stop-ProcessOnPort($Port) {
     }
 }
 
-Log-Message "════════════════════════════════════════════════════════"
+Log-Message "========================================================"
 Log-Message "Resume Upload Job STARTED"
 
 # Load environment variables
@@ -95,7 +95,7 @@ $StartedPuppeteer = $false
 $StartedBackend = $false
 
 try {
-    # ── Start Puppeteer service (port 3001) ──────────────────────────────────
+    # --- Start Puppeteer service (port 3001) ---
     if (Test-PortListening 3001) {
         Log-Message "Puppeteer service already running on :3001"
     } else {
@@ -118,7 +118,7 @@ try {
         }
     }
 
-    # ── Start Spring Boot backend (port 8085) ───────────────────────────────
+    # --- Start Spring Boot backend (port 8085) ---
     if (Test-PortListening 8085) {
         Log-Message "Backend already running on :8085"
     } else {
@@ -139,11 +139,11 @@ try {
         }
 
         if (-not $ready) {
-            throw "Backend did not start within 90s — aborting"
+            throw "Backend did not start within 90s - aborting"
         }
     }
 
-    # ── Call the API ──────────────────────────────────────────────────────────
+    # --- Call the API ---
     Log-Message "Calling POST /api/login-and-upload-resume..."
     $Headers = @{ "Content-Type" = "application/json" }
     $Body = @{
@@ -157,10 +157,10 @@ try {
     Log-Message "Response: $($Response | ConvertTo-Json -Compress)"
 
     if ($Response.success -eq $true) {
-        Log-Message "Naukri SUCCESS — PDF: $($Response.pdfPath)"
+        Log-Message "Naukri SUCCESS - PDF: $($Response.pdfPath)"
         Show-Notification "Resume Builder Success" "Naukri resume successfully updated and uploaded!"
         
-        # ── Call the LinkedIn API ────────────────────────────────────────────────
+        # --- Call the LinkedIn API ---
         Log-Message "Calling POST /api/linkedin/message-recruiters..."
         $LBody = @{
             username = $LINKEDIN_EMAIL
@@ -172,7 +172,7 @@ try {
         Log-Message "LinkedIn Response: $($LResponse | ConvertTo-Json -Compress)"
 
         if ($LResponse.success -eq $true) {
-            Log-Message "LinkedIn SUCCESS — Processed recruiter list"
+            Log-Message "LinkedIn SUCCESS - Processed recruiter list"
             Show-Notification "LinkedIn Success" "LinkedIn Recruiter outreach messages sent successfully!"
         } else {
             throw "Failed LinkedIn outreach: $($LResponse.message)"
@@ -186,7 +186,7 @@ try {
     Show-Notification "Resume Builder Failure" "Automation failed! Error: $_" $true
     exit 1
 } finally {
-    # ── Teardown Services (PC should sleep cleanly) ───────────────────────────
+    # --- Teardown Services (PC should sleep cleanly) ---
     Log-Message "Cleaning up background services..."
     if ($StartedPuppeteer) {
         Stop-ProcessOnPort 3001
@@ -195,5 +195,5 @@ try {
         Stop-ProcessOnPort 8085
     }
     Log-Message "Resume Upload Job COMPLETE"
-    Log-Message "════════════════════════════════════════════════════════"
+    Log-Message "========================================================"
 }
