@@ -205,29 +205,147 @@ public class NaukriResumeService {
         Files.writeString(texFile, latexContent, StandardCharsets.UTF_8);
         logger.info("Wrote .tex file: {}", texFile);
 
-        ProcessBuilder pb = new ProcessBuilder(
-                "pdflatex",
-                "-interaction=nonstopmode",
-                "-halt-on-error",
-                "-output-directory=" + RESUMES_DIR,
-                texFile.toString()
-        );
-        pb.redirectErrorStream(true);
-        Process process = pb.start();
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "pdflatex",
+                    "-interaction=nonstopmode",
+                    "-halt-on-error",
+                    "-output-directory=" + RESUMES_DIR,
+                    texFile.toString()
+            );
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) logger.debug("pdflatex: {}", line);
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) logger.debug("pdflatex: {}", line);
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode == 0 && Files.exists(pdfFile)) {
+                logger.info("PDF compiled successfully via pdflatex: {}", pdfFile);
+                return pdfFile.toString();
+            }
+            logger.warn("pdflatex exited with code {}. Triggering HTML-to-PDF fallback.", exitCode);
+        } catch (Exception e) {
+            logger.warn("pdflatex execution failed ({}). Triggering HTML-to-PDF fallback.", e.getMessage());
         }
 
-        int exitCode = process.waitFor();
-        if (exitCode == 0 && Files.exists(pdfFile)) {
-            logger.info("PDF compiled successfully: {}", pdfFile);
+        // Fallback: Compile to PDF via Puppeteer
+        try {
+            String htmlContent = convertLatexToHtml(latexContent);
+            return compileHtmlToPdfViaPuppeteer(htmlContent, pdfFile);
+        } catch (Exception fallbackEx) {
+            logger.error("HTML-to-PDF fallback also failed!", fallbackEx);
+            throw new RuntimeException("All PDF compilation methods failed (pdflatex and Puppeteer html-to-pdf fallback)", fallbackEx);
+        }
+    }
+
+    private String compileHtmlToPdfViaPuppeteer(String htmlContent, Path pdfFile) throws Exception {
+        logger.info("Calling Puppeteer HTML-to-PDF fallback endpoint...");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, String> requestBody = Map.of(
+            "html", htmlContent,
+            "outputPath", pdfFile.toAbsolutePath().toString()
+        );
+
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+                PUPPETEER_URL + "/api/naukri/html-to-pdf",
+                new HttpEntity<>(requestBody, headers),
+                Map.class
+        );
+
+        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null
+                && Boolean.TRUE.equals(response.getBody().get("success"))) {
+            logger.info("Fallback PDF compiled successfully via Puppeteer at: {}", pdfFile);
             return pdfFile.toString();
         }
 
-        logger.warn("pdflatex exited with code {}. Returning .tex as fallback.", exitCode);
-        return texFile.toString();
+        throw new RuntimeException("Puppeteer html-to-pdf API failed: " + (response.getBody() != null ? response.getBody().toString() : "empty response"));
+    }
+
+    private String convertLatexToHtml(String latex) {
+        int startDoc = latex.indexOf("\\begin{document}");
+        if (startDoc != -1) {
+            latex = latex.substring(startDoc + 16);
+        }
+        int endDoc = latex.indexOf("\\end{document}");
+        if (endDoc != -1) {
+            latex = latex.substring(0, endDoc);
+        }
+
+        String html = latex
+            .replace("\\begin{center}", "<div style='text-align: center; margin-bottom: 20px;'>")
+            .replace("\\end{center}", "</div>")
+            .replaceAll("\\{\\\\Huge \\\\textbf\\{([^}]+)\\}\\}", "<h1 style='margin: 0; font-size: 24pt;'>$1</h1>")
+            .replaceAll("\\\\href\\{mailto:([^}]+)\\}\\{([^}]+)\\}", "<a href='mailto:$1'>$2</a>")
+            .replaceAll("\\\\href\\{([^}]+)\\}\\{([^}]+)\\}", "<a href='$1'>$2</a>")
+            .replaceAll("\\\\small\\s+", "")
+            .replaceAll("\\\\Large\\s+", "")
+            .replaceAll("\\\\large\\s+", "")
+            .replace("\\quad $|$ \\quad", " | ")
+            .replace("\\quad", " ")
+            .replaceAll("\\\\vspace\\{[^}]+\\}", "")
+            .replaceAll("\\\\hfill", "")
+            .replaceAll("\\\\\\\\", "<br/>");
+
+        html = html.replaceAll("\\\\section\\{([^}]+)\\}", "<h2 style='border-bottom: 1px solid #333; padding-bottom: 3px; margin-top: 20px; margin-bottom: 8px; font-size: 14pt; font-weight: bold; text-transform: uppercase;'>$1</h2>");
+
+        html = html.replace("\\resumeSubHeadingListStart", "<div class='list-subheading'>");
+        html = html.replace("\\resumeSubHeadingListEnd", "</div>");
+        html = html.replace("\\resumeItemListStart", "<ul style='margin-top: 4px; margin-bottom: 8px; padding-left: 20px;'>");
+        html = html.replace("\\resumeItemListEnd", "</ul>");
+        html = html.replaceAll("\\\\resumeItem\\{([^}]+)\\}", "<li style='margin-bottom: 3px;'>$1</li>");
+
+        html = html.replaceAll(
+            "\\\\resumeSubheading\\{([^}]+)\\}\\{([^}]+)\\}\\{([^}]+)\\}\\{([^}]+)\\}",
+            "<div style='margin-bottom: 10px; font-size: 10.5pt;'>" +
+            "  <table style='width: 100%; border-collapse: collapse;'>" +
+            "    <tr>" +
+            "      <td style='text-align: left;'><strong>$1</strong></td>" +
+            "      <td style='text-align: right;'>$2</td>" +
+            "    </tr>" +
+            "    <tr>" +
+            "      <td style='text-align: left; font-style: italic; color: #555;'>$3</td>" +
+            "      <td style='text-align: right; font-style: italic; color: #555;'>$4</td>" +
+            "    </tr>" +
+            "  </table>" +
+            "</div>"
+        );
+
+        html = html.replace("\\begin{itemize}[leftmargin=0.15in, label={}]", "<div style='font-size: 10.5pt; line-height: 1.4;'>");
+        html = html.replace("\\end{itemize}", "</div>");
+        html = html.replace("\\small{\\item{", "");
+        html = html.replace("}}", "");
+        html = html.replaceAll("\\\\textbf\\{([^}]+)\\}", "<strong>$1</strong>");
+
+        html = html
+            .replace("\\&", "&")
+            .replace("\\%", "%")
+            .replace("\\$", "$")
+            .replace("\\#", "#")
+            .replace("\\_", "_")
+            .replace("\\{", "{")
+            .replace("\\}", "}")
+            .replace("\\textbackslash{}", "\\")
+            .replace("\\textasciitilde{}", "~")
+            .replace("\\textasciicircum{}", "^");
+
+        return "<html>" +
+               "<head>" +
+               "<meta charset='utf-8'>" +
+               "<style>" +
+               "  body { font-family: 'Arial', sans-serif; font-size: 10.5pt; line-height: 1.35; color: #222; margin: 0; padding: 0; }" +
+               "  a { color: #0056b3; text-decoration: none; }" +
+               "  ul { margin: 0; padding-left: 20px; }" +
+               "</style>" +
+               "</head>" +
+               "<body>" +
+               html +
+               "</body>" +
+               "</html>";
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

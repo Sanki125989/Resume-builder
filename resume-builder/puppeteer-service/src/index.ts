@@ -1,4 +1,5 @@
 import express from 'express';
+import puppeteer from 'puppeteer';
 import { scrapeRecommendedJob, uploadResumeToNaukriAndLogout } from './scrapers/naukri';
 
 const app  = express();
@@ -47,6 +48,52 @@ app.post('/api/naukri/upload-resume', async (req, res) => {
         const message = error instanceof Error ? error.message : String(error);
         console.error('[/api/naukri/upload-resume]', message);
         res.status(500).json({ error: 'Failed to upload resume', message });
+    }
+});
+
+/**
+ * Compile HTML content to a PDF file using Puppeteer
+ * Body: { html: "...", outputPath: "..." }
+ * Returns: { success: boolean, outputPath: "..." }
+ */
+app.post('/api/naukri/html-to-pdf', async (req, res) => {
+    let pdfBrowser = null;
+    try {
+        const { html, outputPath } = req.body;
+        if (!html || !outputPath) {
+            return res.status(400).json({ error: 'html and outputPath are required' });
+        }
+
+        console.log('[/api/naukri/html-to-pdf] Launching browser to print PDF...');
+        pdfBrowser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        const pdfPage = await pdfBrowser.newPage();
+        await pdfPage.setContent(html, { waitUntil: 'domcontentloaded' });
+
+        await pdfPage.pdf({
+            path: outputPath,
+            format: 'letter',
+            margin: {
+                top: '0.6in',
+                bottom: '0.6in',
+                left: '0.6in',
+                right: '0.6in'
+            },
+            printBackground: true
+        });
+
+        console.log('[/api/naukri/html-to-pdf] PDF generated successfully at:', outputPath);
+        res.json({ success: true, outputPath });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('[/api/naukri/html-to-pdf] error:', message);
+        res.status(500).json({ error: 'Failed to generate PDF from HTML', message });
+    } finally {
+        if (pdfBrowser) {
+            await pdfBrowser.close().catch(() => {});
+        }
     }
 });
 

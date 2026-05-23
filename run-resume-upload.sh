@@ -19,9 +19,17 @@ NPM="/home/sanket/.nvm/versions/node/v24.4.0/bin/npm"
 MVN="/usr/bin/mvn"
 CURL="/usr/bin/curl"
 
-# ── Logging helper ─────────────────────────────────────────────────────────────
+# ── Logging & Notification helpers ─────────────────────────────────────────────
 log() {
     echo "[$(date '+%d-%m-%Y %H:%M:%S')] $*" | tee -a "$LOGFILE"
+}
+
+notify() {
+    local title="Resume Builder"
+    local message="$1"
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send "$title" "$message"
+    fi
 }
 
 log "════════════════════════════════════════════════════════"
@@ -30,6 +38,7 @@ log "Resume Upload Job STARTED"
 # ── Load credentials ───────────────────────────────────────────────────────────
 if [[ ! -f "$ENV_FILE" ]]; then
     log "ERROR: .env not found at $ENV_FILE"
+    notify "ERROR: .env not found at $ENV_FILE"
     exit 1
 fi
 # shellcheck source=/dev/null
@@ -37,8 +46,48 @@ source "$ENV_FILE"
 
 if [[ -z "${NAUKRI_EMAIL:-}" ]] || [[ -z "${NAUKRI_PASSWORD:-}" ]]; then
     log "ERROR: NAUKRI_EMAIL or NAUKRI_PASSWORD not set in .env"
+    notify "ERROR: credentials not set in .env"
     exit 1
 fi
+
+# Track processes started in this session
+STARTED_PUPPETEER=0
+STARTED_BACKEND=0
+
+# Cleanup handler to shut down services (keeps memory clean)
+cleanup() {
+    log "Cleaning up background services..."
+    if [[ $STARTED_PUPPETEER -eq 1 ]]; then
+        if [[ -n "${PUPPETEER_PID:-}" ]]; then
+            log "  Stopping Puppeteer service (PID $PUPPETEER_PID)..."
+            kill "$PUPPETEER_PID" >/dev/null 2>&1 || kill -9 "$PUPPETEER_PID" >/dev/null 2>&1
+        fi
+        # Port fallback
+        if command -v lsof >/dev/null 2>&1; then
+            local p_pid
+            p_pid=$(lsof -t -i :3001)
+            [[ -n "$p_pid" ]] && kill -9 "$p_pid" >/dev/null 2>&1
+        fi
+    fi
+
+    if [[ $STARTED_BACKEND -eq 1 ]]; then
+        if [[ -n "${BACKEND_PID:-}" ]]; then
+            log "  Stopping Backend service (PID $BACKEND_PID)..."
+            kill "$BACKEND_PID" >/dev/null 2>&1 || kill -9 "$BACKEND_PID" >/dev/null 2>&1
+        fi
+        # Port fallback
+        if command -v lsof >/dev/null 2>&1; then
+            local b_pid
+            b_pid=$(lsof -t -i :8085)
+            [[ -n "$b_pid" ]] && kill -9 "$b_pid" >/dev/null 2>&1
+        fi
+    fi
+    log "Resume Upload Job COMPLETE"
+    log "════════════════════════════════════════════════════════"
+}
+
+# Trap exits to ensure cleanup runs
+trap cleanup EXIT
 
 # ── Start Puppeteer service (port 3001) if not running ────────────────────────
 if $CURL -sf http://localhost:3001/health >/dev/null 2>&1; then
@@ -54,6 +103,7 @@ else
 
     cd "$PUPPETEER_DIR" && "$NODE" dist/index.js >> "$LOGFILE" 2>&1 &
     PUPPETEER_PID=$!
+    STARTED_PUPPETEER=1
     log "  Puppeteer service started (PID $PUPPETEER_PID)"
 
     # Wait up to 15s for it to be ready
@@ -73,6 +123,7 @@ else
     log "Starting Spring Boot backend (this takes ~60s)..."
     cd "$BACKEND_DIR" && "$MVN" spring-boot:run >> "$LOGFILE" 2>&1 &
     BACKEND_PID=$!
+    STARTED_BACKEND=1
     log "  Backend started (PID $BACKEND_PID)"
 
     # Wait up to 120s for backend to respond
@@ -89,6 +140,7 @@ else
 
     if [[ $READY -eq 0 ]]; then
         log "ERROR: Backend did not start within 120s — aborting"
+        notify "ERROR: Backend did not start within 120s"
         exit 1
     fi
 fi
@@ -107,11 +159,9 @@ log "Response: $RESPONSE"
 if echo "$RESPONSE" | grep -q '"success":true'; then
     PDF=$(echo "$RESPONSE" | grep -o '"pdfPath":"[^"]*"' | cut -d'"' -f4)
     log "SUCCESS — PDF: $PDF"
+    notify "SUCCESS: Naukri resume successfully updated and uploaded!"
 else
     log "FAILED — check response above"
-    log "════════════════════════════════════════════════════════"
+    notify "FAILED: Resume builder execution failed. Check logs."
     exit 1
 fi
-
-log "Resume Upload Job COMPLETE"
-log "════════════════════════════════════════════════════════"

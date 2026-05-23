@@ -1,6 +1,6 @@
 # Puppeteer Service for Resume Builder
 
-This project is a Puppeteer service designed to automate the process of scraping job descriptions from popular job portals such as Naukri and LinkedIn. It integrates with a TypeScript React.js frontend and a Spring Boot backend, utilizing MySQL for data storage.
+This project is a Puppeteer service designed to automate the process of scraping job descriptions from popular job portals such as Naukri and LinkedIn. It integrates with the Spring Boot backend to support automated job applications and resume updates.
 
 ## Features
 
@@ -38,7 +38,7 @@ To start the Puppeteer service, run:
 npm start
 ```
 
-Ensure that the backend and frontend services are also running for full functionality.
+Ensure that the backend service is also running for full functionality.
 
 ## Contributing
 
