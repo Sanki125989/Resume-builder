@@ -46,7 +46,13 @@ source "$ENV_FILE"
 
 if [[ -z "${NAUKRI_EMAIL:-}" ]] || [[ -z "${NAUKRI_PASSWORD:-}" ]]; then
     log "ERROR: NAUKRI_EMAIL or NAUKRI_PASSWORD not set in .env"
-    notify "ERROR: credentials not set in .env"
+    notify "ERROR: Naukri credentials not set in .env"
+    exit 1
+fi
+
+if [[ -z "${LINKEDIN_EMAIL:-}" ]] || [[ -z "${LINKEDIN_PASSWORD:-}" ]]; then
+    log "ERROR: LINKEDIN_EMAIL or LINKEDIN_PASSWORD not set in .env"
+    notify "ERROR: LinkedIn credentials not set in .env"
     exit 1
 fi
 
@@ -158,8 +164,26 @@ log "Response: $RESPONSE"
 # ── Report result ──────────────────────────────────────────────────────────────
 if echo "$RESPONSE" | grep -q '"success":true'; then
     PDF=$(echo "$RESPONSE" | grep -o '"pdfPath":"[^"]*"' | cut -d'"' -f4)
-    log "SUCCESS — PDF: $PDF"
+    log "Naukri SUCCESS — PDF: $PDF"
     notify "SUCCESS: Naukri resume successfully updated and uploaded!"
+    
+    # ── Call the LinkedIn API ──────────────────────────────────────────────────
+    log "Calling POST /api/linkedin/message-recruiters ..."
+    LRESPONSE=$($CURL -s -X POST "http://localhost:8085/api/linkedin/message-recruiters" \
+        -H "Content-Type: application/json" \
+        -d "{\"username\":\"$LINKEDIN_EMAIL\",\"password\":\"$LINKEDIN_PASSWORD\",\"limit\":5}" \
+        --max-time 600 2>&1)
+    
+    log "LinkedIn Response: $LRESPONSE"
+    
+    if echo "$LRESPONSE" | grep -q '"success":true'; then
+        log "LinkedIn SUCCESS — Processed recruiter list"
+        notify "SUCCESS: LinkedIn recruiter outreach messages sent successfully!"
+    else
+        log "LinkedIn FAILED — check response above"
+        notify "FAILED: LinkedIn outreach execution failed."
+        exit 1
+    fi
 else
     log "FAILED — check response above"
     notify "FAILED: Resume builder execution failed. Check logs."

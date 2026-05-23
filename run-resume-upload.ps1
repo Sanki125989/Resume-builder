@@ -75,10 +75,18 @@ Get-Content $ENV_FILE | ForEach-Object {
 
 $NAUKRI_EMAIL = [System.Environment]::GetEnvironmentVariable("NAUKRI_EMAIL")
 $NAUKRI_PASSWORD = [System.Environment]::GetEnvironmentVariable("NAUKRI_PASSWORD")
+$LINKEDIN_EMAIL = [System.Environment]::GetEnvironmentVariable("LINKEDIN_EMAIL")
+$LINKEDIN_PASSWORD = [System.Environment]::GetEnvironmentVariable("LINKEDIN_PASSWORD")
 
 if ([string]::IsNullOrEmpty($NAUKRI_EMAIL) -or [string]::IsNullOrEmpty($NAUKRI_PASSWORD)) {
     Log-Message "ERROR: NAUKRI_EMAIL or NAUKRI_PASSWORD not set in env variables"
     Show-Notification "Resume Builder Error" "ERROR: NAUKRI_EMAIL or NAUKRI_PASSWORD not set in env variables" $true
+    exit 1
+}
+
+if ([string]::IsNullOrEmpty($LINKEDIN_EMAIL) -or [string]::IsNullOrEmpty($LINKEDIN_PASSWORD)) {
+    Log-Message "ERROR: LINKEDIN_EMAIL or LINKEDIN_PASSWORD not set in env variables"
+    Show-Notification "Resume Builder Error" "ERROR: LINKEDIN_EMAIL or LINKEDIN_PASSWORD not set in env variables" $true
     exit 1
 }
 
@@ -149,8 +157,26 @@ try {
     Log-Message "Response: $($Response | ConvertTo-Json -Compress)"
 
     if ($Response.success -eq $true) {
-        Log-Message "SUCCESS — PDF: $($Response.pdfPath)"
+        Log-Message "Naukri SUCCESS — PDF: $($Response.pdfPath)"
         Show-Notification "Resume Builder Success" "Naukri resume successfully updated and uploaded!"
+        
+        # ── Call the LinkedIn API ────────────────────────────────────────────────
+        Log-Message "Calling POST /api/linkedin/message-recruiters..."
+        $LBody = @{
+            username = $LINKEDIN_EMAIL
+            password = $LINKEDIN_PASSWORD
+            limit = 5
+        } | ConvertTo-Json
+
+        $LResponse = Invoke-RestMethod -Uri "http://localhost:8085/api/linkedin/message-recruiters" -Method Post -Headers $Headers -Body $LBody -TimeoutSec 600
+        Log-Message "LinkedIn Response: $($LResponse | ConvertTo-Json -Compress)"
+
+        if ($LResponse.success -eq $true) {
+            Log-Message "LinkedIn SUCCESS — Processed recruiter list"
+            Show-Notification "LinkedIn Success" "LinkedIn Recruiter outreach messages sent successfully!"
+        } else {
+            throw "Failed LinkedIn outreach: $($LResponse.message)"
+        }
     } else {
         throw "Failed resume upload: $($Response.message)"
     }

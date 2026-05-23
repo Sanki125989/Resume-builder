@@ -1,6 +1,7 @@
 import express from 'express';
 import puppeteer from 'puppeteer';
 import { scrapeRecommendedJob, uploadResumeToNaukriAndLogout } from './scrapers/naukri';
+import { messageExistingRecruiters } from './scrapers/linkedin';
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -94,6 +95,27 @@ app.post('/api/naukri/html-to-pdf', async (req, res) => {
         if (pdfBrowser) {
             await pdfBrowser.close().catch(() => {});
         }
+    }
+});
+
+/**
+ * Message existing 1st-degree recruiters and attach resume
+ * Body: { username, password, resumePath, messageTemplate, limit }
+ * Returns: { success: boolean, results: [...] }
+ */
+app.post('/api/linkedin/message-recruiters', async (req, res) => {
+    try {
+        const { username, password, resumePath, messageTemplate, limit } = req.body;
+        if (!username || !password || !resumePath || !messageTemplate) {
+            return res.status(400).json({ error: 'username, password, resumePath, and messageTemplate are required' });
+        }
+        console.log('[/api/linkedin/message-recruiters] Initiating recruiter outreach message flow...');
+        const results = await messageExistingRecruiters(username, password, resumePath, messageTemplate, limit || 5);
+        res.json({ success: true, results });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('[/api/linkedin/message-recruiters] error:', message);
+        res.status(500).json({ error: 'LinkedIn messaging flow failed', message });
     }
 });
 
