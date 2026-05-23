@@ -73,6 +73,10 @@ Get-Content $ENV_FILE | ForEach-Object {
     }
 }
 
+# Set local paths for Java and Maven (ensuring they resolve correctly)
+$env:JAVA_HOME = "D:\Program Files\Java\jdk-25"
+$env:PATH = "D:\apache-maven-3.8.6-src\apache-maven-3.8.6\apache-maven\src\bin;D:\Program Files\Java\jdk-25\bin;" + $env:PATH
+
 $NAUKRI_EMAIL = [System.Environment]::GetEnvironmentVariable("NAUKRI_EMAIL")
 $NAUKRI_PASSWORD = [System.Environment]::GetEnvironmentVariable("NAUKRI_PASSWORD")
 $LINKEDIN_EMAIL = [System.Environment]::GetEnvironmentVariable("LINKEDIN_EMAIL")
