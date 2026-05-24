@@ -93,6 +93,12 @@ AGENTS.md
 ehthumbs.db
 Thumbs.db
 
+# ─── Puppeteer Sessions ───────────────────────────────────────────────────────
+.chrome-session-linkedin/
+.chrome-session/
+resume-builder/.chrome-session-linkedin/
+resume-builder/.chrome-session/
+
 # ─── Logs ────────────────────────────────────────────────────────────────────
 logs/
 *.log

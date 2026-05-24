@@ -43,10 +43,10 @@ function Stop-ProcessOnPort($Port) {
     if ($netstat) {
         foreach ($line in $netstat) {
             $parts = $line.line.Split(" ", [System.StringSplitOptions]::RemoveEmptyEntries)
-            $pid = $parts[-1]
-            if ($pid -match '^\d+$' -and $pid -gt 0) {
-                Log-Message "Terminating process $pid listening on port $Port..."
-                Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+            $targetPid = $parts[-1]
+            if ($targetPid -match '^\d+$' -and $targetPid -gt 0) {
+                Log-Message "Terminating process $targetPid listening on port $Port..."
+                Stop-Process -Id $targetPid -Force -ErrorAction SilentlyContinue
             }
         }
     }

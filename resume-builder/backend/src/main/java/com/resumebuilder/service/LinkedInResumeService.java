@@ -25,13 +25,9 @@ public class LinkedInResumeService {
     );
 
     private static final String DEFAULT_MESSAGE_TEMPLATE = 
-            "Hi {{NAME}},\n\n" +
-            "I hope you are doing well. I'm a Java / Spring Boot Developer with experience in building " +
-            "scalable microservices and REST APIs. I noticed you recruit in this space and wanted to share " +
-            "my updated resume (attached below) for any active or upcoming roles at your organization.\n\n" +
-            "I'd appreciate it if we could connect. Thank you for your time!\n\n" +
-            "Best regards,\n" +
-            "Sanket";
+            "Hello, Im Sanket, Software Engineer at Evoluteiq i have total 4+ years of experiance in SD1 role \n" +
+            "im looking for new opportunity here is my resume im attaching please let me know if any opening position for role \n\n" +
+            "thank you!";
 
     @Autowired
     private RestTemplate restTemplate;

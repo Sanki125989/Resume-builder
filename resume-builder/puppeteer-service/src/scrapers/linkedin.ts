@@ -78,7 +78,7 @@ async function loginLinkedIn(username: string, password: string): Promise<boolea
         }
 
         console.log('[linkedin-login] Session not found. Initiating login flow...');
-        await p.goto('https://www.linkedin.com/login', { waitUntil: 'networkidle2', timeout: 60000 });
+        await p.goto('https://www.linkedin.com/login', { waitUntil: 'load', timeout: 60000 });
         await p.waitForSelector('#username', { timeout: 15000 });
         await delay(1000);
 
@@ -150,7 +150,7 @@ export async function messageExistingRecruiters(
     const searchUrl = `https://www.linkedin.com/search/results/people/?keywords=${searchKeyword}&network=%5B%22F%22%5D`;
     
     console.log('[linkedin-outreach] Navigating to search URL:', searchUrl);
-    await p.goto(searchUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+    await p.goto(searchUrl, { waitUntil: 'load', timeout: 60000 });
     await delay(5000);
 
     // Extract recruiter cards from the search page
@@ -180,7 +180,7 @@ export async function messageExistingRecruiters(
     for (const target of recruiters.slice(0, dailyLimit)) {
         try {
             console.log(`[linkedin-outreach] Processing connection: ${target.name} | ${target.title}`);
-            await p.goto(target.profileUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+            await p.goto(target.profileUrl, { waitUntil: 'load', timeout: 60000 });
             await delay(4000 + Math.random() * 3000); // Wait for profile page elements
 
             // Look for the primary "Message" button on the profile page
