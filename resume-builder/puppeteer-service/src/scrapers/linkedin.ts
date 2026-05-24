@@ -79,6 +79,13 @@ async function loginLinkedIn(username: string, password: string): Promise<boolea
 
         console.log('[linkedin-login] Session not found. Initiating login flow...');
         await p.goto('https://www.linkedin.com/login', { waitUntil: 'load', timeout: 60000 });
+        
+        // If we got auto-redirected to feed/home, we are already logged in
+        if (p.url().includes('/feed') || (await p.$('#global-nav')) !== null) {
+            console.log('[linkedin-login] Auto-redirected to feed. Already logged in.');
+            return true;
+        }
+        
         await p.waitForSelector('#username', { timeout: 15000 });
         await delay(1000);
 
@@ -139,11 +146,19 @@ export async function messageExistingRecruiters(
 
     // 1. Log in (or restore session)
     const loggedIn = await loginLinkedIn(username, password);
-    if (!loggedIn) {
-        console.log('[linkedin-outreach] Could not verify automatic login. Proceeding with active browser state, please check if manual 2FA is needed.');
-    }
-
+    
     const { page: p } = await initBrowser();
+    
+    // Final verification of login state
+    const verifyLoggedIn = await p.evaluate(() => {
+        return document.querySelector('#global-nav') !== null;
+    });
+    
+    if (!verifyLoggedIn) {
+        throw new Error('LinkedIn authentication failed. Please verify your credentials and check the browser window to resolve any CAPTCHA or 2FA prompts manually.');
+    }
+    
+    console.log('[linkedin-outreach] Successfully verified logged-in session. Starting recruiter search...');
 
     // 2. Search 1st-degree connections matching recruiters
     const searchKeyword = encodeURIComponent('Talent Acquisition OR Recruiter');
