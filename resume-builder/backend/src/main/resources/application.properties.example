@@ -21,3 +21,6 @@ spring.devtools.restart.enabled=true
 spring.devtools.livereload.enabled=true
 spring.devtools.restart.poll-interval=2000
 spring.devtools.restart.quiet-period=1000
+
+# LinkedIn message outreach template
+linkedin.message.template=Hello, Im Sanket, Software Engineer at Evoluteiq i have total 4+ years of experiance in SD1 role \nim looking for new opportunity here is my resume im attaching please let me know if any opening position for role \n\nthank you!

@@ -3,6 +3,7 @@ package com.resumebuilder.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -24,10 +25,8 @@ public class LinkedInResumeService {
             "Documents", "Personal documents", "Resume-builder", "resumes"
     );
 
-    private static final String DEFAULT_MESSAGE_TEMPLATE = 
-            "Hello, Im Sanket, Software Engineer at Evoluteiq i have total 4+ years of experiance in SD1 role \n" +
-            "im looking for new opportunity here is my resume im attaching please let me know if any opening position for role \n\n" +
-            "thank you!";
+    @Value("${linkedin.message.template}")
+    private String defaultMessageTemplate;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -46,7 +45,7 @@ public class LinkedInResumeService {
         logger.info("Found latest resume PDF to send: {}", latestPdf.toAbsolutePath());
 
         // 2. Determine template
-        String template = (customTemplate != null && !customTemplate.isBlank()) ? customTemplate : DEFAULT_MESSAGE_TEMPLATE;
+        String template = (customTemplate != null && !customTemplate.isBlank()) ? customTemplate : defaultMessageTemplate;
         int maxLimit = (limit != null && limit > 0) ? limit : 5;
 
         // 3. Prepare HTTP Request to NodeJS Puppeteer Service
