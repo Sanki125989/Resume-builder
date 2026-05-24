@@ -99,52 +99,49 @@ $StartedPuppeteer = $false
 $StartedBackend = $false
 
 try {
+    # Force stop any stale background processes to ensure we run the latest compiled code
+    Log-Message "Checking for and stopping any stale background services..."
+    Stop-ProcessOnPort 3001
+    Stop-ProcessOnPort 8085
+
     # --- Start Puppeteer service (port 3001) ---
-    if (Test-PortListening 3001) {
-        Log-Message "Puppeteer service already running on :3001"
-    } else {
-        Log-Message "Starting Puppeteer service..."
-        if (-not (Test-Path (Join-Path $PUPPETEER_DIR "dist\index.js"))) {
-            Log-Message "  Building Puppeteer service (first run)..."
-            Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run build" -WorkingDirectory $PUPPETEER_DIR -NoNewWindow -Wait
-        }
-        
-        Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run start" -WorkingDirectory $PUPPETEER_DIR -NoNewWindow
-        $StartedPuppeteer = $true
-        
-        # Wait up to 15s
-        for ($i = 0; $i -lt 5; $i++) {
-            Start-Sleep -Seconds 3
-            if (Test-PortListening 3001) {
-                Log-Message "  Puppeteer service ready"
-                break
-            }
+    Log-Message "Starting Puppeteer service..."
+    if (-not (Test-Path (Join-Path $PUPPETEER_DIR "dist\index.js"))) {
+        Log-Message "  Building Puppeteer service (first run)..."
+        Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run build" -WorkingDirectory $PUPPETEER_DIR -NoNewWindow -Wait
+    }
+    
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run start" -WorkingDirectory $PUPPETEER_DIR -NoNewWindow
+    $StartedPuppeteer = $true
+    
+    # Wait up to 15s
+    for ($i = 0; $i -lt 5; $i++) {
+        Start-Sleep -Seconds 3
+        if (Test-PortListening 3001) {
+            Log-Message "  Puppeteer service ready"
+            break
         }
     }
 
     # --- Start Spring Boot backend (port 8085) ---
-    if (Test-PortListening 8085) {
-        Log-Message "Backend already running on :8085"
-    } else {
-        Log-Message "Starting Spring Boot backend (takes ~45s)..."
-        Start-Process -FilePath "cmd.exe" -ArgumentList "/c mvn spring-boot:run" -WorkingDirectory $BACKEND_DIR -NoNewWindow
-        $StartedBackend = $true
+    Log-Message "Starting Spring Boot backend (takes ~45s)..."
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c mvn spring-boot:run" -WorkingDirectory $BACKEND_DIR -NoNewWindow
+    $StartedBackend = $true
 
-        # Wait up to 90s
-        $ready = $false
-        for ($i = 0; $i -lt 18; $i++) {
-            Start-Sleep -Seconds 5
-            if (Test-PortListening 8085) {
-                Log-Message "  Backend ready after $($i * 5) seconds"
-                $ready = $true
-                break
-            }
-            Log-Message "  ...waiting for backend ($($i * 5)s elapsed)"
+    # Wait up to 90s
+    $ready = $false
+    for ($i = 0; $i -lt 18; $i++) {
+        Start-Sleep -Seconds 5
+        if (Test-PortListening 8085) {
+            Log-Message "  Backend ready after $($i * 5) seconds"
+            $ready = $true
+            break
         }
+        Log-Message "  ...waiting for backend ($($i * 5)s elapsed)"
+    }
 
-        if (-not $ready) {
-            throw "Backend did not start within 90s - aborting"
-        }
+    if (-not $ready) {
+        throw "Backend did not start within 90s - aborting"
     }
 
     # --- Call the API ---
