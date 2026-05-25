@@ -179,19 +179,43 @@ export async function messageExistingRecruiters(
 
     // Extract recruiter cards from the search page
     const recruiters = await p.evaluate(() => {
-        const cards = document.querySelectorAll('.reusable-search__result-container');
+        let cards = document.querySelectorAll('.reusable-search__result-container');
+        if (cards.length === 0) {
+            cards = document.querySelectorAll('li[class*="search-result"], .search-result-card, .search-results__list > li, [data-chameleon-result-id]');
+        }
+        
         const items: { name: string; profileUrl: string; title: string }[] = [];
         
         cards.forEach(card => {
-            const titleElement = card.querySelector('.entity-result__title-text a') as HTMLAnchorElement;
-            const descElement = card.querySelector('.entity-result__primary-subtitle') as HTMLDivElement;
-            const messageBtn = card.querySelector('button[aria-label^="Message"]') as HTMLButtonElement;
+            // Find Title/Name Element
+            let titleElement = card.querySelector('.entity-result__title-text a') as HTMLAnchorElement;
+            if (!titleElement) {
+                const anchors = Array.from(card.querySelectorAll('a'));
+                titleElement = anchors.find(a => a.href && a.href.includes('/in/')) as HTMLAnchorElement;
+            }
             
-            // Only target connections who have a direct "Message" button available on the search card
-            if (titleElement && descElement && messageBtn) {
+            // Find Subtitle/Description (Optional)
+            const descElement = card.querySelector('.entity-result__primary-subtitle, [class*="subtitle"], [class*="description"]') as HTMLDivElement;
+            
+            // Find Message Button (Robust lookup)
+            const interactiveElements = Array.from(card.querySelectorAll('button, a'));
+            const messageBtn = interactiveElements.find(el => {
+                const text = el.textContent ? el.textContent.trim().toLowerCase() : '';
+                const aria = el.getAttribute('aria-label') ? el.getAttribute('aria-label')!.toLowerCase() : '';
+                const href = el.getAttribute('href') ? el.getAttribute('href')!.toLowerCase() : '';
+                
+                return text === 'message' || 
+                       aria.startsWith('message') || 
+                       aria.includes('message') ||
+                       href.includes('/messaging') ||
+                       href.includes('/message');
+            });
+            
+            // Target the recruiter if we have their profile URL and they are connectable/messageable
+            if (titleElement && titleElement.href && messageBtn) {
                 const name = titleElement.innerText.split('\n')[0].trim();
                 const profileUrl = titleElement.href.split('?')[0]; // strip query params
-                const title = descElement.innerText.trim();
+                const title = descElement ? descElement.innerText.trim() : 'Recruiter';
                 items.push({ name, profileUrl, title });
             }
         });
