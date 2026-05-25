@@ -34,7 +34,7 @@ async function initBrowser(): Promise<{ browser: Browser; page: Page }> {
             console.log('[linkedin-browser] Using userDataDir:', userDataDir);
             
             browser = await puppeteer.launch({
-                headless: false, // Set to false to easily see and resolve login/2FA challenges manually
+                headless: false, // Set to false to easily see the Easy Apply forms and step in if needed
                 userDataDir,
                 args: [
                     '--no-sandbox',
@@ -114,7 +114,6 @@ async function loginLinkedIn(username: string, password: string): Promise<boolea
             return true;
         } else {
             console.log('[linkedin-login] FAILED or waiting for manual intervention. Current URL:', currentUrl);
-            // We return false, but user can complete 2FA in the opened browser window
             return false;
         }
     } catch (e) {
@@ -123,32 +122,32 @@ async function loginLinkedIn(username: string, password: string): Promise<boolea
     }
 }
 
-export interface OutreachResult {
-    name: string;
-    title: string;
-    profileUrl: string;
-    status: 'sent' | 'skipped_already_sent' | 'failed';
+export interface EasyApplyResult {
+    jobTitle: string;
+    company: string;
+    status: 'applied' | 'skipped' | 'failed';
     error?: string;
 }
 
-export async function messageExistingRecruiters(
+/**
+ * Automates LinkedIn Easy Apply applications.
+ */
+export async function automateLinkedInEasyApply(
     username: string,
     password: string,
     pdfPath: string,
-    messageTemplate: string,
-    dailyLimit: number = 5
-): Promise<OutreachResult[]> {
-    const results: OutreachResult[] = [];
+    targetLimit: number = 5
+): Promise<EasyApplyResult[]> {
+    const results: EasyApplyResult[] = [];
 
     if (!fs.existsSync(pdfPath)) {
-        throw new Error(`Local PDF file not found at: ${pdfPath}`);
+        throw new Error(`Local resume PDF not found at: ${pdfPath}`);
     }
 
     // 1. Log in (or restore session)
     const loggedIn = await loginLinkedIn(username, password);
-    
     const { page: p } = await initBrowser();
-    
+
     // Final verification of login state: Wait for the navigation bar to render completely
     console.log('[linkedin-outreach] Verifying login session state...');
     let verifyLoggedIn = false;
@@ -156,201 +155,364 @@ export async function messageExistingRecruiters(
         await p.waitForSelector('#global-nav', { timeout: 20000 });
         verifyLoggedIn = true;
     } catch (e) {
-        // Fallback: Check if URL indicates a logged-in state
         const currentUrl = p.url();
-        if (currentUrl.includes('/feed') || currentUrl.includes('/search') || currentUrl.includes('/in/')) {
+        if (currentUrl.includes('/feed') || currentUrl.includes('/jobs') || currentUrl.includes('/search')) {
             verifyLoggedIn = true;
         }
     }
     
     if (!verifyLoggedIn) {
-        throw new Error('LinkedIn authentication failed. Please verify your credentials and check the browser window to resolve any CAPTCHA or 2FA prompts manually.');
+        throw new Error('LinkedIn authentication failed. Please check the browser window to resolve any CAPTCHA or 2FA prompts manually.');
     }
-    
-    console.log('[linkedin-outreach] Successfully verified logged-in session. Starting recruiter search...');
+    console.log('[linkedin-outreach] Successfully verified logged-in session.');
 
-    // 2. Search 1st-degree connections matching recruiters
-    const searchKeyword = encodeURIComponent('Talent Acquisition OR Recruiter');
-    const searchUrl = `https://www.linkedin.com/search/results/people/?keywords=${searchKeyword}&network=%5B%22F%22%5D`;
-    
-    console.log('[linkedin-outreach] Navigating to search URL:', searchUrl);
+    // 2. Navigate to recommended jobs filtered by Easy Apply (f_AL=true)
+    const searchUrl = 'https://www.linkedin.com/jobs/search/?f_AL=true';
+    console.log('[linkedin-jobs] Navigating to Easy Apply jobs search page...');
     await p.goto(searchUrl, { waitUntil: 'load', timeout: 60000 });
-    
-    // Wait for result cards to render dynamically (with a fallback if there are no results)
-    try {
-        console.log('[linkedin-outreach] Waiting for search results to load...');
-        await p.waitForSelector('.reusable-search__result-container, li[class*="search-result"], [data-chameleon-result-id]', { timeout: 10000 });
-    } catch (e) {
-        console.log('[linkedin-outreach] No search result cards loaded in 10s. Your search query might have returned 0 results.');
-    }
-    await delay(2000);
 
-    // Extract recruiter cards from the search page
-    const recruiters = await p.evaluate(() => {
-        let cards = document.querySelectorAll('.reusable-search__result-container');
-        if (cards.length === 0) {
-            cards = document.querySelectorAll('li[class*="search-result"], .search-result-card, .search-results__list > li, [data-chameleon-result-id]');
-        }
+    try {
+        console.log('[linkedin-jobs] Waiting for job search result cards to render...');
+        await p.waitForSelector('.scaffold-layout__list-item, [class*="job-card-container"]', { timeout: 15000 });
+    } catch (e) {
+        console.log('[linkedin-jobs] No job cards rendered. Page might be loading slowly or filters yielded 0 results.');
+    }
+    await delay(3000);
+
+    // Extract list item job IDs or selectors
+    const jobListings = await p.evaluate(() => {
+        const items = document.querySelectorAll('.scaffold-layout__list-item, [data-occluded-card-urn], [class*="job-card-container"]');
+        const list: { jobId: string; selector: string }[] = [];
         
-        const items: { name: string; profileUrl: string; title: string }[] = [];
-        
-        cards.forEach(card => {
-            // Find Title/Name Element
-            let titleElement = card.querySelector('.entity-result__title-text a') as HTMLAnchorElement;
-            if (!titleElement) {
-                const anchors = Array.from(card.querySelectorAll('a'));
-                titleElement = anchors.find(a => a.href && a.href.includes('/in/')) as HTMLAnchorElement;
-            }
-            
-            // Find Subtitle/Description (Optional)
-            const descElement = card.querySelector('.entity-result__primary-subtitle, [class*="subtitle"], [class*="description"]') as HTMLDivElement;
-            
-            // Find Message Button (Robust lookup)
-            const interactiveElements = Array.from(card.querySelectorAll('button, a'));
-            const messageBtn = interactiveElements.find(el => {
-                const text = el.textContent ? el.textContent.trim().toLowerCase() : '';
-                const aria = el.getAttribute('aria-label') ? el.getAttribute('aria-label')!.toLowerCase() : '';
-                const href = el.getAttribute('href') ? el.getAttribute('href')!.toLowerCase() : '';
-                
-                return text === 'message' || 
-                       aria.startsWith('message') || 
-                       aria.includes('message') ||
-                       href.includes('/messaging') ||
-                       href.includes('/message');
-            });
-            
-            // Target the recruiter if we have their profile URL and they are connectable/messageable
-            if (titleElement && titleElement.href && messageBtn) {
-                const name = titleElement.innerText.split('\n')[0].trim();
-                const profileUrl = titleElement.href.split('?')[0]; // strip query params
-                const title = descElement ? descElement.innerText.trim() : 'Recruiter';
-                items.push({ name, profileUrl, title });
+        items.forEach((item, index) => {
+            const urn = item.getAttribute('data-occluded-card-urn') || item.getAttribute('data-job-id') || '';
+            const titleEl = item.querySelector('[class*="job-title"], a.job-card-list__title');
+            if (titleEl) {
+                list.push({
+                    jobId: urn || `index-${index}`,
+                    selector: `.scaffold-layout__list-item:nth-child(${index + 1}), [class*="job-card-container"]:nth-child(${index + 1})`
+                });
             }
         });
-        return items;
+        return list;
     });
 
-    console.log(`[linkedin-outreach] Found ${recruiters.length} target connections matching filters.`);
+    console.log(`[linkedin-jobs] Scraped ${jobListings.length} job cards on current page. Starting applications...`);
+    let appliedCount = 0;
 
-    // 3. Loop and message
-    for (const target of recruiters.slice(0, dailyLimit)) {
+    for (const listing of jobListings) {
+        if (appliedCount >= targetLimit) {
+            console.log(`[linkedin-jobs] Reached target application limit of ${targetLimit}. Finishing.`);
+            break;
+        }
+
+        let jobTitle = 'Unknown Role';
+        let companyName = 'Unknown Company';
+
         try {
-            console.log(`[linkedin-outreach] Processing connection: ${target.name} | ${target.title}`);
-            await p.goto(target.profileUrl, { waitUntil: 'load', timeout: 60000 });
-            await delay(4000 + Math.random() * 3000); // Wait for profile page elements
+            // Click on job card on the left panel to load details on the right panel
+            console.log(`[linkedin-jobs] Clicking job card: ${listing.selector}`);
+            const cardEl = await p.$(listing.selector);
+            if (cardEl) {
+                await cardEl.click();
+                await delay(2500); // Wait for details pane to load
+            } else {
+                continue;
+            }
 
-            // Look for the primary "Message" button on the profile page
-            let messageBtn = await p.$('button.pvs-profile-actions__action[aria-label*="Message"]');
-            
-            if (!messageBtn) {
-                // If it's not immediately visible, search for buttons containing "Message" in text or aria-label
+            // Extract job title and company from the details panel
+            const jobInfo = await p.evaluate(() => {
+                const titleEl = document.querySelector('.job-details-jobs-unified-top-card__job-title, [class*="job-title"]');
+                const companyEl = document.querySelector('.job-details-jobs-unified-top-card__company-name, [class*="company-name"]');
+                return {
+                    title: titleEl ? (titleEl as HTMLElement).innerText.trim() : 'Unknown Role',
+                    company: companyEl ? (companyEl as HTMLElement).innerText.trim() : 'Unknown Company'
+                };
+            });
+            jobTitle = jobInfo.title;
+            companyName = jobInfo.company;
+            console.log(`[linkedin-jobs] Inspecting: ${jobTitle} at ${companyName}`);
+
+            // Look for "Easy Apply" button on the details panel
+            // Button is usually within artdeco-button class or contains "Easy Apply" text
+            let easyApplyBtn = await p.$('.jobs-apply-button, button.jobs-apply-button');
+            if (!easyApplyBtn) {
+                // Fallback: look for any button that contains the text "Easy Apply"
                 const buttons = await p.$$('button');
                 for (const btn of buttons) {
-                    const label = await p.evaluate(el => el.getAttribute('aria-label') || el.innerText, btn);
-                    if (label && label.toLowerCase().includes('message')) {
-                        messageBtn = btn;
+                    const text = await p.evaluate(el => el.innerText, btn);
+                    if (text && text.trim() === 'Easy Apply') {
+                        easyApplyBtn = btn;
                         break;
                     }
                 }
             }
 
-            if (!messageBtn) {
-                throw new Error('Could not find Message button on profile page');
-            }
-
-            console.log('[linkedin-outreach] Clicking Message button...');
-            await messageBtn.click();
-            await delay(3000);
-
-            // Check if chat overlay bubble opened
-            const chatSelector = '.msg-convo-wrapper, [class*="msg-overlay-conversation-bubble"]';
-            await p.waitForSelector(chatSelector, { timeout: 10000 });
-
-            // AVOID DUPLICATE MESSAGING:
-            // Check if there is already an exchange of messages (e.g. message list has elements)
-            const conversationExists = await p.evaluate(() => {
-                const listItems = document.querySelectorAll('.msg-s-event-listitem, [class*="msg-s-event-listitem"]');
-                return listItems.length > 0;
-            });
-
-            if (conversationExists) {
-                console.log(`[linkedin-outreach] Skipping ${target.name} because a conversation history exists.`);
-                results.push({ ...target, status: 'skipped_already_sent' });
-                
-                // Close the open chat box
-                const closeBtn = await p.$('.msg-overlay-bubble-header__control--close-btn, button[class*="close-btn"]');
-                if (closeBtn) await closeBtn.click();
-                await delay(1000);
+            if (!easyApplyBtn) {
+                console.log(`[linkedin-jobs] 'Easy Apply' button not found for this role (might be already applied or redirects externally). Skipping.`);
+                results.push({ jobTitle, company: companyName, status: 'skipped', error: 'Easy Apply button not found' });
                 continue;
             }
 
-            // Fill message text
-            const personalizedMsg = messageTemplate.replace('{{NAME}}', target.name.split(' ')[0]);
-            
-            // Wait for text input area
-            const inputSelector = '.msg-form__contenteditable[contenteditable="true"], div[contenteditable="true"]';
-            await p.waitForSelector(inputSelector, { timeout: 5000 });
-            await p.focus(inputSelector);
-            await delay(500);
-
-            console.log('[linkedin-outreach] Typing message...');
-            await p.keyboard.type(personalizedMsg, { delay: 30 });
-            await delay(1500);
-
-            // Upload PDF file
-            console.log('[linkedin-outreach] Attaching resume file:', pdfPath);
-            const fileInputSelector = 'input[type="file"][name="file"], input[type="file"]';
-            const fileInput = await p.$(fileInputSelector);
-            if (!fileInput) {
-                throw new Error('File input field not found in chat box');
-            }
-            await fileInput.uploadFile(pdfPath);
-
-            // Wait for file upload progress indicator to complete
-            console.log('[linkedin-outreach] Waiting for file attachment to finish uploading...');
-            await p.waitForSelector('.msg-form__attachment-uploading-state, [class*="uploading-state"]', { hidden: true, timeout: 30000 });
+            // Click the Easy Apply button
+            console.log('[linkedin-jobs] Clicking Easy Apply...');
+            await easyApplyBtn.click();
             await delay(2000);
 
-            // Click Send button
-            const sendBtnSelector = 'button.msg-form__send-button, button[type="submit"]';
-            const sendBtn = await p.$(sendBtnSelector);
-            if (!sendBtn) {
-                throw new Error('Send button not found');
-            }
-
-            console.log('[linkedin-outreach] Clicking Send...');
-            await sendBtn.click();
-            await delay(3000);
-
-            console.log(`[linkedin-outreach] SUCCESS: Sent message & resume to ${target.name}`);
-            results.push({ ...target, status: 'sent' });
-
-            // Close chat bubble
-            const closeBtn = await p.$('.msg-overlay-bubble-header__control--close-btn, button[class*="close-btn"]');
-            if (closeBtn) await closeBtn.click();
+            // Wait for modal dialog to open
+            const modalSelector = '[role="dialog"], .jobs-easy-apply-modal';
+            await p.waitForSelector(modalSelector, { timeout: 8000 });
             await delay(1000);
 
-            // Sleep between candidates (anti-scraping delay)
-            const sleepTime = 12000 + Math.random() * 8000;
-            console.log(`[linkedin-outreach] Sleeping for ${Math.round(sleepTime / 1000)}s...`);
-            await delay(sleepTime);
+            // Process application steps
+            let stepNum = 1;
+            let skipped = false;
+            let failed = false;
+
+            while (true) {
+                console.log(`[easy-apply] Processing step ${stepNum}...`);
+                await delay(1000);
+
+                // Check if we are on the final submit screen
+                const submitBtn = await p.$('button[aria-label*="Submit"], button[data-easy-apply-submit-button]');
+                const submitTextBtn = await findButtonByText(p, 'Submit application');
+                const finalSubmitBtn = submitBtn || submitTextBtn;
+
+                if (finalSubmitBtn) {
+                    console.log('[easy-apply] Submit button detected! Submitting application...');
+                    
+                    // Answer any final page questions if present
+                    await fillFormFields(p, pdfPath);
+                    await delay(1000);
+
+                    // Click Submit
+                    await finalSubmitBtn.click();
+                    await delay(4000); // Wait for submission progress
+
+                    // Wait for the "Application sent" confirmation dialog close button
+                    const closeConfirmationBtn = await p.$('button[aria-label*="Dismiss"], button[class*="dismiss"], button[class*="close"]');
+                    if (closeConfirmationBtn) {
+                        await closeConfirmationBtn.click();
+                        await delay(1500);
+                    } else {
+                        // Press escape key as fallback to dismiss dialog
+                        await p.keyboard.press('Escape');
+                        await delay(1000);
+                    }
+
+                    console.log(`[easy-apply] SUCCESS: Applied to ${jobTitle} at ${companyName}!`);
+                    results.push({ jobTitle, company: companyName, status: 'applied' });
+                    appliedCount++;
+                    break; // Application successful, exit the steps loop
+                }
+
+                // Check for Next / Review button to proceed to the next screen
+                const nextBtn = await p.$('button[aria-label*="Next"], button[aria-label*="Review"], button[data-easy-apply-next-button]');
+                const nextTextBtn = await findButtonByText(p, 'Next');
+                const reviewTextBtn = await findButtonByText(p, 'Review');
+                const proceedBtn = nextBtn || nextTextBtn || reviewTextBtn;
+
+                if (proceedBtn) {
+                    // Record current URL/state to check if we get stuck
+                    const previousUrl = p.url();
+                    const previousState = await p.evaluate(() => document.body.innerHTML.length);
+
+                    // Answer form questions on this screen
+                    console.log('[easy-apply] Filling form fields for this step...');
+                    await fillFormFields(p, pdfPath);
+                    await delay(1000);
+
+                    // Click next step
+                    console.log('[easy-apply] Clicking proceed button...');
+                    await proceedBtn.click();
+                    await delay(2500);
+
+                    // Check if we got stuck (Next was clicked, but we didn't advance due to validation errors we couldn't solve)
+                    const currentState = await p.evaluate(() => document.body.innerHTML.length);
+                    if (p.url() === previousUrl && Math.abs(currentState - previousState) < 100) {
+                        console.warn('[easy-apply] Stuck on same page after clicking Next (unresolved validation errors). Skipping job.');
+                        skipped = true;
+                        break;
+                    }
+
+                    stepNum++;
+                } else {
+                    console.warn('[easy-apply] No next/submit button found. Skipping this job.');
+                    failed = true;
+                    break;
+                }
+            }
+
+            // If skipped or failed, we must close the open modal cleanly to proceed to the next card
+            if (skipped || failed) {
+                console.log('[easy-apply] Closing modal dialog and discarding application...');
+                const dismissBtn = await p.$('button[aria-label="Dismiss"], button[class*="dismiss"]');
+                if (dismissBtn) {
+                    await dismissBtn.click();
+                    await delay(1000);
+                    
+                    // Click the "Discard" button on the confirm popup
+                    const discardConfirmBtn = await p.$('button[data-control-name="discard_application_confirm_btn"]');
+                    const discardTextBtn = await findButtonByText(p, 'Discard');
+                    const finalDiscardBtn = discardConfirmBtn || discardTextBtn;
+                    
+                    if (finalDiscardBtn) {
+                        await finalDiscardBtn.click();
+                        await delay(1000);
+                    }
+                }
+                
+                results.push({ 
+                    jobTitle, 
+                    company: companyName, 
+                    status: skipped ? 'skipped' : 'failed',
+                    error: skipped ? 'Stuck on form validation' : 'Form processing failed'
+                });
+            }
+
+            // Stagger applications slightly to avoid rate limit flags
+            await delay(5000 + Math.random() * 5000);
 
         } catch (err) {
             const errMsg = err instanceof Error ? err.message : String(err);
-            console.error(`[linkedin-outreach] Error messaging ${target.name}:`, errMsg);
-            results.push({ ...target, status: 'failed', error: errMsg });
+            console.error(`[linkedin-jobs] Error applying to ${jobTitle}:`, errMsg);
+            results.push({ jobTitle, company: companyName, status: 'failed', error: errMsg });
 
-            // Try closing the chat window in case of errors so the next attempt isn't blocked
+            // Force close modal in case of crash
             try {
-                const closeBtn = await p.$('.msg-overlay-bubble-header__control--close-btn, button[class*="close-btn"]');
-                if (closeBtn) await closeBtn.click();
+                await p.keyboard.press('Escape');
+                await delay(1000);
             } catch (e) {}
-            await delay(3000);
         }
     }
 
-    // Keep browser active/running (since we closed chat boxes) or close it cleanly
     await closeBrowser();
-
     return results;
+}
+
+/**
+ * Helper to locate buttons by their text content.
+ */
+async function findButtonByText(page: Page, text: string) {
+    const buttons = await page.$$('button');
+    for (const btn of buttons) {
+        const btnText = await page.evaluate(el => el.innerText, btn);
+        if (btnText && btnText.toLowerCase().includes(text.toLowerCase())) {
+            return btn;
+        }
+    }
+    return null;
+}
+
+/**
+ * Automates answering of text, checkbox, radio and select inputs in the Easy Apply modal.
+ */
+async function fillFormFields(page: Page, pdfPath: string) {
+    // 1. Upload Resume if required on this page
+    const fileInput = await page.$('input[type="file"]');
+    if (fileInput) {
+        console.log('[form-filler] Resume file input detected. Uploading PDF...');
+        await fileInput.uploadFile(pdfPath);
+        await delay(2000); // Wait for upload completion
+    }
+
+    // 2. Process all input elements on page
+    await page.evaluate(() => {
+        // Handle Radio Buttons (Yes/No questions)
+        const radioWrappers = document.querySelectorAll('.fb-form-element, [class*="radio-button"]');
+        radioWrappers.forEach(wrapper => {
+            const labelText = (wrapper.textContent || '').toLowerCase();
+            const radios = wrapper.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
+            
+            if (radios.length > 0) {
+                // Determine whether to select Yes or No
+                let selectYes = true;
+                
+                // If it asks for sponsorship, sponsorship requirement, visa sponsorship -> click "No" (we don't require visa sponsor)
+                if (labelText.includes('sponsor') || labelText.includes('require visa') || labelText.includes('sponsorship')) {
+                    selectYes = false;
+                }
+                
+                // If it asks if authorized to work, citizen, completed degree -> click "Yes"
+                if (labelText.includes('authorized') || labelText.includes('citizen') || labelText.includes('have you completed')) {
+                    selectYes = true;
+                }
+
+                radios.forEach(radio => {
+                    const valText = (radio.value || '').toLowerCase();
+                    const radioLabel = (radio.parentElement?.textContent || '').toLowerCase();
+                    
+                    if (selectYes && (valText === 'yes' || valText === 'true' || radioLabel.includes('yes') || radioLabel.includes('true'))) {
+                        radio.click();
+                    } else if (!selectYes && (valText === 'no' || valText === 'false' || radioLabel.includes('no') || radioLabel.includes('false'))) {
+                        radio.click();
+                    }
+                });
+            }
+        });
+
+        // Handle Checkboxes
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
+        checkboxes.forEach(cb => {
+            if (!cb.checked) {
+                cb.click();
+            }
+        });
+
+        // Handle Dropdowns (Select tags)
+        const selects = document.querySelectorAll('select') as NodeListOf<HTMLSelectElement>;
+        selects.forEach(select => {
+            if (select.value === '' || select.selectedIndex === 0) {
+                const labelText = (select.parentElement?.textContent || '').toLowerCase();
+                let chosenVal = '';
+                
+                // Inspect options
+                const options = Array.from(select.options);
+                
+                // Check for Yes/No in options
+                let isSponsorship = labelText.includes('sponsor') || labelText.includes('sponsorship') || labelText.includes('require visa');
+                
+                let targetOption = options.find(opt => {
+                    const text = opt.text.toLowerCase();
+                    return isSponsorship ? text === 'no' : text === 'yes';
+                });
+
+                if (!targetOption) {
+                    // Fallback to first non-empty option
+                    targetOption = options.find(opt => opt.value !== '');
+                }
+
+                if (targetOption) {
+                    select.value = targetOption.value;
+                    // Trigger change event so page React/Angular handlers notice the update
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+        });
+
+        // Handle Text Inputs (Numeric & string)
+        const textInputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea') as NodeListOf<HTMLInputElement | HTMLTextAreaElement>;
+        textInputs.forEach(input => {
+            if (input.value === '') {
+                const labelText = (input.parentElement?.textContent || '').toLowerCase();
+                let answer = '';
+
+                // Check for experience questions
+                if (labelText.includes('experience') || labelText.includes('years') || labelText.includes('how many')) {
+                    answer = '4'; // Set to 4 years of experience (user has 4+ years)
+                } else if (labelText.includes('salary') || labelText.includes('compensation') || labelText.includes('pay')) {
+                    answer = '750000'; // Default average salary expectation in INR or leave blank
+                } else if (labelText.includes('notice') || labelText.includes('days')) {
+                    answer = '30'; // 30 days notice period
+                } else {
+                    // Default fallback answers
+                    answer = input.getAttribute('type') === 'number' ? '4' : 'Yes';
+                }
+
+                input.value = answer;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    });
 }

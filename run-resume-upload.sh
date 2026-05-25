@@ -168,8 +168,8 @@ if echo "$RESPONSE" | grep -q '"success":true'; then
     notify "SUCCESS: Naukri resume successfully updated and uploaded!"
     
     # ── Call the LinkedIn API ──────────────────────────────────────────────────
-    log "Calling POST /api/linkedin/message-recruiters ..."
-    LRESPONSE=$($CURL -s -X POST "http://localhost:8085/api/linkedin/message-recruiters" \
+    log "Calling POST /api/linkedin/easy-apply ..."
+    LRESPONSE=$($CURL -s -X POST "http://localhost:8085/api/linkedin/easy-apply" \
         -H "Content-Type: application/json" \
         -d "{\"username\":\"$LINKEDIN_EMAIL\",\"password\":\"$LINKEDIN_PASSWORD\",\"limit\":5}" \
         --max-time 600 2>&1)
@@ -177,11 +177,11 @@ if echo "$RESPONSE" | grep -q '"success":true'; then
     log "LinkedIn Response: $LRESPONSE"
     
     if echo "$LRESPONSE" | grep -q '"success":true'; then
-        log "LinkedIn SUCCESS — Processed recruiter list"
-        notify "SUCCESS: LinkedIn recruiter outreach messages sent successfully!"
+        log "LinkedIn SUCCESS — Easy Apply applications completed"
+        notify "SUCCESS: LinkedIn Easy Apply job applications submitted successfully!"
     else
-        log "LinkedIn FAILED — check response above"
-        notify "FAILED: LinkedIn outreach execution failed."
+        log "LinkedIn Easy Apply FAILED — check response above"
+        notify "FAILED: LinkedIn Easy Apply execution failed."
         exit 1
     fi
 else

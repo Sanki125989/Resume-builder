@@ -1,7 +1,7 @@
 import express from 'express';
 import puppeteer from 'puppeteer';
 import { scrapeRecommendedJob, uploadResumeToNaukriAndLogout } from './scrapers/naukri';
-import { messageExistingRecruiters } from './scrapers/linkedin';
+import { automateLinkedInEasyApply } from './scrapers/linkedin';
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -99,23 +99,23 @@ app.post('/api/naukri/html-to-pdf', async (req, res) => {
 });
 
 /**
- * Message existing 1st-degree recruiters and attach resume
- * Body: { username, password, resumePath, messageTemplate, limit }
+ * Automate LinkedIn Easy Apply applications
+ * Body: { username, password, resumePath, limit }
  * Returns: { success: boolean, results: [...] }
  */
-app.post('/api/linkedin/message-recruiters', async (req, res) => {
+app.post('/api/linkedin/easy-apply', async (req, res) => {
     try {
-        const { username, password, resumePath, messageTemplate, limit } = req.body;
-        if (!username || !password || !resumePath || !messageTemplate) {
-            return res.status(400).json({ error: 'username, password, resumePath, and messageTemplate are required' });
+        const { username, password, resumePath, limit } = req.body;
+        if (!username || !password || !resumePath) {
+            return res.status(400).json({ error: 'username, password, and resumePath are required' });
         }
-        console.log('[/api/linkedin/message-recruiters] Initiating recruiter outreach message flow...');
-        const results = await messageExistingRecruiters(username, password, resumePath, messageTemplate, limit || 5);
+        console.log('[/api/linkedin/easy-apply] Initiating Easy Apply application automation...');
+        const results = await automateLinkedInEasyApply(username, password, resumePath, limit || 5);
         res.json({ success: true, results });
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        console.error('[/api/linkedin/message-recruiters] error:', message);
-        res.status(500).json({ error: 'LinkedIn messaging flow failed', message });
+        console.error('[/api/linkedin/easy-apply] error:', message);
+        res.status(500).json({ error: 'LinkedIn Easy Apply automation failed', message });
     }
 });
 

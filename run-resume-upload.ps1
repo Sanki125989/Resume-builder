@@ -162,21 +162,21 @@ try {
         Show-Notification "Resume Builder Success" "Naukri resume successfully updated and uploaded!"
         
         # --- Call the LinkedIn API ---
-        Log-Message "Calling POST /api/linkedin/message-recruiters..."
+        Log-Message "Calling POST /api/linkedin/easy-apply..."
         $LBody = @{
             username = $LINKEDIN_EMAIL
             password = $LINKEDIN_PASSWORD
             limit = 5
         } | ConvertTo-Json
 
-        $LResponse = Invoke-RestMethod -Uri "http://localhost:8085/api/linkedin/message-recruiters" -Method Post -Headers $Headers -Body $LBody -TimeoutSec 600
+        $LResponse = Invoke-RestMethod -Uri "http://localhost:8085/api/linkedin/easy-apply" -Method Post -Headers $Headers -Body $LBody -TimeoutSec 600
         Log-Message "LinkedIn Response: $($LResponse | ConvertTo-Json -Compress)"
 
         if ($LResponse.success -eq $true) {
-            Log-Message "LinkedIn SUCCESS - Processed recruiter list"
-            Show-Notification "LinkedIn Success" "LinkedIn Recruiter outreach messages sent successfully!"
+            Log-Message "LinkedIn SUCCESS - Easy Apply applications completed"
+            Show-Notification "LinkedIn Success" "LinkedIn Easy Apply job applications submitted successfully!"
         } else {
-            throw "Failed LinkedIn outreach: $($LResponse.message)"
+            throw "Failed LinkedIn Easy Apply: $($LResponse.message)"
         }
     } else {
         throw "Failed resume upload: $($Response.message)"

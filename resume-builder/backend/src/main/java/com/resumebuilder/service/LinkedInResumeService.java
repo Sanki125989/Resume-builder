@@ -3,7 +3,6 @@ package com.resumebuilder.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -25,30 +24,25 @@ public class LinkedInResumeService {
             "Documents", "Personal documents", "Resume-builder", "resumes"
     );
 
-    @Value("${linkedin.message.template}")
-    private String defaultMessageTemplate;
-
     @Autowired
     private RestTemplate restTemplate;
 
     /**
-     * Finds the latest resume PDF in the resumes directory and sends it to recruiters.
+     * Finds the latest resume PDF in the resumes directory and submits Easy Apply job applications.
      */
-    public Map<String, Object> messageRecruiters(String username, String password, Integer limit, String customTemplate) throws Exception {
-        logger.info("Starting LinkedIn Recruiter outreach flow...");
+    public Map<String, Object> applyToJobs(String username, String password, Integer limit) throws Exception {
+        logger.info("Starting LinkedIn Easy Apply job application flow...");
 
         // 1. Locate the latest resume PDF file
         Path latestPdf = findLatestResumePdf();
         if (latestPdf == null) {
             throw new NoSuchFileException("No resume PDF files found in " + RESUMES_DIR + ". Please run the resume compilation or Naukri flow first.");
         }
-        logger.info("Found latest resume PDF to send: {}", latestPdf.toAbsolutePath());
+        logger.info("Found latest resume PDF to submit: {}", latestPdf.toAbsolutePath());
 
-        // 2. Determine template
-        String template = (customTemplate != null && !customTemplate.isBlank()) ? customTemplate : defaultMessageTemplate;
         int maxLimit = (limit != null && limit > 0) ? limit : 5;
 
-        // 3. Prepare HTTP Request to NodeJS Puppeteer Service
+        // 2. Prepare HTTP Request to NodeJS Puppeteer Service
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -56,27 +50,26 @@ public class LinkedInResumeService {
         requestBody.put("username", username);
         requestBody.put("password", password);
         requestBody.put("resumePath", latestPdf.toAbsolutePath().toString());
-        requestBody.put("messageTemplate", template);
         requestBody.put("limit", maxLimit);
 
-        String endpointUrl = PUPPETEER_URL + "/api/linkedin/message-recruiters";
+        String endpointUrl = PUPPETEER_URL + "/api/linkedin/easy-apply";
         logger.info("Sending request to Puppeteer service at: {}", endpointUrl);
 
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
         ResponseEntity<Map> responseEntity = restTemplate.postForEntity(endpointUrl, requestEntity, Map.class);
 
         if (responseEntity.getBody() == null) {
-            throw new RuntimeException("Empty response received from Puppeteer LinkedIn automation endpoint");
+            throw new RuntimeException("Empty response received from Puppeteer LinkedIn Easy Apply automation endpoint");
         }
 
         Map<String, Object> body = responseEntity.getBody();
-        logger.info("LinkedIn automation response status: {}", responseEntity.getStatusCode());
+        logger.info("LinkedIn Easy Apply response status: {}", responseEntity.getStatusCode());
 
         return Map.of(
                 "success", true,
                 "resumePathUsed", latestPdf.toAbsolutePath().toString(),
                 "results", body.getOrDefault("results", Collections.emptyList()),
-                "message", "Recruiter outreach completed"
+                "message", "LinkedIn Easy Apply applications completed"
         );
     }
 

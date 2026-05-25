@@ -14,14 +14,13 @@ public class LinkedInResumeController {
     @Autowired
     private LinkedInResumeService linkedInResumeService;
 
-    @PostMapping("/api/linkedin/message-recruiters")
-    public ResponseEntity<?> messageRecruiters(@RequestBody Map<String, Object> request) {
+    @PostMapping("/api/linkedin/easy-apply")
+    public ResponseEntity<?> easyApply(@RequestBody Map<String, Object> request) {
         String username = (String) request.get("username");
         String password = (String) request.get("password");
         
         // Optional parameters
         Integer limit = (Integer) request.get("limit");
-        String customTemplate = (String) request.get("messageTemplate");
 
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
             return ResponseEntity.badRequest()
@@ -29,11 +28,11 @@ public class LinkedInResumeController {
         }
 
         try {
-            Map<String, Object> result = linkedInResumeService.messageRecruiters(username, password, limit, customTemplate);
+            Map<String, Object> result = linkedInResumeService.applyToJobs(username, password, limit);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Failed to complete LinkedIn recruiter outreach flow",
+                    "error", "Failed to complete LinkedIn Easy Apply job application flow",
                     "message", e.getMessage()
             ));
         }
