@@ -149,10 +149,19 @@ export async function messageExistingRecruiters(
     
     const { page: p } = await initBrowser();
     
-    // Final verification of login state
-    const verifyLoggedIn = await p.evaluate(() => {
-        return document.querySelector('#global-nav') !== null;
-    });
+    // Final verification of login state: Wait for the navigation bar to render completely
+    console.log('[linkedin-outreach] Verifying login session state...');
+    let verifyLoggedIn = false;
+    try {
+        await p.waitForSelector('#global-nav', { timeout: 20000 });
+        verifyLoggedIn = true;
+    } catch (e) {
+        // Fallback: Check if URL indicates a logged-in state
+        const currentUrl = p.url();
+        if (currentUrl.includes('/feed') || currentUrl.includes('/search') || currentUrl.includes('/in/')) {
+            verifyLoggedIn = true;
+        }
+    }
     
     if (!verifyLoggedIn) {
         throw new Error('LinkedIn authentication failed. Please verify your credentials and check the browser window to resolve any CAPTCHA or 2FA prompts manually.');
