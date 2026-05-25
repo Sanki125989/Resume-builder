@@ -175,7 +175,15 @@ export async function messageExistingRecruiters(
     
     console.log('[linkedin-outreach] Navigating to search URL:', searchUrl);
     await p.goto(searchUrl, { waitUntil: 'load', timeout: 60000 });
-    await delay(5000);
+    
+    // Wait for result cards to render dynamically (with a fallback if there are no results)
+    try {
+        console.log('[linkedin-outreach] Waiting for search results to load...');
+        await p.waitForSelector('.reusable-search__result-container, li[class*="search-result"], [data-chameleon-result-id]', { timeout: 10000 });
+    } catch (e) {
+        console.log('[linkedin-outreach] No search result cards loaded in 10s. Your search query might have returned 0 results.');
+    }
+    await delay(2000);
 
     // Extract recruiter cards from the search page
     const recruiters = await p.evaluate(() => {
