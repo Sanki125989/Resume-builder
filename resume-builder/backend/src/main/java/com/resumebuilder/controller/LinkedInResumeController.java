@@ -1,6 +1,7 @@
 package com.resumebuilder.controller;
 
 import com.resumebuilder.service.LinkedInResumeService;
+import com.resumebuilder.service.NaukriResumeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,9 @@ public class LinkedInResumeController {
 
     @Autowired
     private LinkedInResumeService linkedInResumeService;
+
+    @Autowired
+    private NaukriResumeService naukriResumeService;
 
     @PostMapping("/api/linkedin/easy-apply")
     public ResponseEntity<?> easyApply(@RequestBody Map<String, Object> request) {
@@ -33,6 +37,26 @@ public class LinkedInResumeController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
                     "error", "Failed to complete LinkedIn Easy Apply job application flow",
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    @PostMapping("/api/linkedin/tailor-resume")
+    public ResponseEntity<?> tailorResume(@RequestBody Map<String, String> request) {
+        String jobTitle = request.get("jobTitle");
+        String jobDescription = request.get("jobDescription");
+
+        if (jobTitle == null || jobTitle.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "jobTitle is required"));
+        }
+
+        try {
+            String pdfPath = naukriResumeService.tailorAndCompileResume(jobTitle, jobDescription);
+            return ResponseEntity.ok(Map.of("success", true, "pdfPath", pdfPath));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "error", "Failed to tailor and compile resume",
                     "message", e.getMessage()
             ));
         }

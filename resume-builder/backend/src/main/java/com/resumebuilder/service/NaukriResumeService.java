@@ -196,9 +196,13 @@ public class NaukriResumeService {
     // ── PDF compilation ──────────────────────────────────────────────────────
 
     private String compileToNamedPdf(String latexContent) throws Exception {
-        Files.createDirectories(RESUMES_DIR);
         String dateStr   = LocalDate.now().format(DateTimeFormatter.ofPattern("dd_MM_yyyy"));
         String filename  = "Sanket_Resume_" + dateStr;
+        return compileToNamedPdf(latexContent, filename);
+    }
+
+    private String compileToNamedPdf(String latexContent, String filename) throws Exception {
+        Files.createDirectories(RESUMES_DIR);
         Path   texFile   = RESUMES_DIR.resolve(filename + ".tex");
         Path   pdfFile   = RESUMES_DIR.resolve(filename + ".pdf");
 
@@ -346,6 +350,93 @@ public class NaukriResumeService {
                html +
                "</body>" +
                "</html>";
+    }
+
+    public String tailorAndCompileResume(String jobTitle, String jobDescription) throws Exception {
+        logger.info("Tailoring resume for job: {}", jobTitle);
+        
+        // 1. Load resume template
+        String templateContent = loadTemplate();
+        
+        // 2. Fetch user profile
+        User user = userRepository.findAll().stream().findFirst().orElse(null);
+        
+        // 3. Extract skills from description
+        List<String> matchedSkills = extractSkillsFromDescription(jobDescription);
+        logger.info("Extracted matched skills from description: {}", matchedSkills);
+        
+        // 4. Fill template
+        String filledLatex = fillTemplateForJob(templateContent, user, matchedSkills, jobTitle, jobDescription);
+        
+        // 5. Compile to PDF with custom unique name
+        String sanitizedTitle = jobTitle.replaceAll("[^a-zA-Z0-9]", "_");
+        String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String filename = "Sanket_Resume_" + sanitizedTitle + "_" + timestamp;
+        
+        String pdfPath = compileToNamedPdf(filledLatex, filename);
+        logger.info("Tailored PDF compiled at: {}", pdfPath);
+        
+        return pdfPath;
+    }
+
+    private String fillTemplateForJob(String template, User user, List<String> keySkills, String jobTitle, String jobDescription) {
+        String name      = user != null && notBlank(user.getName())  ? user.getName()  : "Sanket";
+        String email     = user != null && notBlank(user.getEmail()) ? user.getEmail() : "";
+        String phone     = user != null && notBlank(user.getPhone()) ? user.getPhone() : "";
+        String linkedin  = "https://linkedin.com/in/yourprofile";
+        
+        // Build customized headline using the jobTitle
+        String headline = jobTitle;
+        if (keySkills != null && !keySkills.isEmpty()) {
+            List<String> top = keySkills.stream().limit(3).collect(Collectors.toList());
+            headline = jobTitle + " | " + String.join(" | ", top);
+        }
+        
+        // Build customized summary
+        String summary = "Software Engineer with expertise in designing and developing scalable enterprise applications. ";
+        if (keySkills != null && !keySkills.isEmpty()) {
+            String skillsJoined = keySkills.stream().limit(4).collect(Collectors.joining(", "));
+            summary += "Strong technical hands-on experience with " + skillsJoined + ". ";
+        }
+        summary += "Experienced in requirements analysis, software engineering best practices, troubleshooting, and delivering business-aligned solutions.";
+        
+        String skills    = buildSkillsLatex(keySkills);
+        String experience = buildExperienceLatex(user);
+        String education  = buildEducationLatex(user);
+
+        return template
+                .replace("{{NAME}}",           escapeLatex(name))
+                .replace("{{HEADLINE}}",        escapeLatex(headline))
+                .replace("{{PHONE}}",           escapeLatex(phone))
+                .replace("{{EMAIL}}",           escapeLatex(email))
+                .replace("{{LINKEDIN}}",        linkedin)
+                .replace("{{LINKEDIN_LABEL}}",  linkedin.replaceFirst("https?://", "").replaceAll("/$", ""))
+                .replace("{{SUMMARY}}",         escapeLatex(summary))
+                .replace("{{SKILLS}}",          skills)
+                .replace("{{EXPERIENCE}}",      experience)
+                .replace("{{EDUCATION}}",       education)
+                .replace("{{PROJECT_SECTION}}", "");
+    }
+
+    private List<String> extractSkillsFromDescription(String jobDescription) {
+        List<String> knownSkills = Arrays.asList(
+            "Java", "Spring Boot", "Spring", "Hibernate", "JPA", "REST API", "REST APIs", "Microservices",
+            "JavaScript", "TypeScript", "React", "ReactJS", "Angular", "Node.js", "SQL",
+            "MySQL", "PostgreSQL", "MongoDB", "Azure", "AWS", "Docker", "Kubernetes",
+            "CI/CD", "Git", "Maven", "JUnit", "Mockito", "Agile", "Code Reviews",
+            "Software Testing", "Documentation", "Gitlab", "Jenkins", "Web Services"
+        );
+        if (jobDescription == null || jobDescription.isBlank()) {
+            return Collections.emptyList();
+        }
+        String lower = jobDescription.toLowerCase();
+        List<String> matched = new ArrayList<>();
+        for (String skill : knownSkills) {
+            if (lower.contains(skill.toLowerCase())) {
+                matched.add(skill);
+            }
+        }
+        return matched;
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
