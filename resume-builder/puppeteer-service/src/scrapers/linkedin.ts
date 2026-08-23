@@ -209,12 +209,38 @@ export async function automateLinkedInEasyApply(
     }
     console.log('[linkedin-outreach] Successfully verified logged-in session.');
 
-    // 2. Navigate to recommended jobs filtered by Easy Apply (f_AL=true)
-    const searchUrl = 'https://www.linkedin.com/jobs/search/?f_AL=true';
-    console.log('[linkedin-jobs] Navigating to Easy Apply jobs search page...');
-    await p.goto(searchUrl, { waitUntil: 'load', timeout: 60000 });
+    // 2. Navigate to the jobs search page, then apply the "Easy Apply" filter by clicking
+    // the actual pill in the top filter bar (rather than only relying on a hand-built
+    // f_AL=true URL param), so the filter is exercised the same way a real user applies it.
+    console.log('[linkedin-jobs] Navigating to jobs search page...');
+    await p.goto('https://www.linkedin.com/jobs/search/', { waitUntil: 'load', timeout: 60000 });
+    await delay(3000);
 
-    const cardSelector = '.scaffold-layout__list-item, [class*="job-card-container"]';
+    console.log('[linkedin-jobs] Applying "Easy Apply" filter from the top filter bar...');
+    const easyApplyFilterPill = await p.$('#searchFilter_applyWithLinkedin');
+    if (easyApplyFilterPill) {
+        await easyApplyFilterPill.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+        await delay(500);
+        await easyApplyFilterPill.click();
+        await delay(3000);
+    } else {
+        console.log('[linkedin-jobs] Easy Apply filter pill not found in header bar. Falling back to direct URL param.');
+    }
+
+    // Traverse back to the URL to confirm the filter actually took effect (LinkedIn reflects
+    // it as f_AL=true); fall back to navigating there directly if the click didn't stick.
+    if (!p.url().includes('f_AL=true')) {
+        console.log('[linkedin-jobs] URL does not reflect Easy Apply filter yet. Navigating directly as a fallback.');
+        await p.goto('https://www.linkedin.com/jobs/search/?f_AL=true', { waitUntil: 'load', timeout: 60000 });
+    } else {
+        console.log('[linkedin-jobs] Easy Apply filter confirmed in URL:', p.url());
+    }
+
+    // LinkedIn nests several elements per job whose class contains "job-card-container"
+    // (the link, metadata wrapper, footer wrapper, ...), so matching on that substring
+    // pulls in many non-card elements per real job. The <li> list item is the one
+    // reliable one-per-job container.
+    const cardSelector = 'li.scaffold-layout__list-item';
     try {
         console.log('[linkedin-jobs] Waiting for job search result cards to render...');
         await p.waitForSelector(cardSelector, { timeout: 15000 });
@@ -226,7 +252,9 @@ export async function automateLinkedInEasyApply(
     console.log('[linkedin-jobs] Starting job applications processing...');
     let appliedCount = 0;
     let cardIndex = 0;
-    const maxAttempts = 15; // Limit total cards attempted to avoid infinite loop
+    // A LinkedIn search results page renders ~25 cards; scale the attempt cap to the
+    // requested limit so a large targetLimit isn't cut short after only 15 cards.
+    const maxAttempts = Math.max(targetLimit + 5, 30);
 
     while (appliedCount < targetLimit && cardIndex < maxAttempts) {
         console.log(`[linkedin-jobs] Attempting card index ${cardIndex}...`);
@@ -251,7 +279,7 @@ export async function automateLinkedInEasyApply(
         
         // Check if it's a valid job card (contains job title)
         const isJobCard = await p.evaluate((el) => {
-            const titleEl = el.querySelector('[class*="job-title"], a.job-card-list__title');
+            const titleEl = el.querySelector('a.job-card-list__title--link, a[href*="/jobs/view/"], a.job-card-list__title, [class*="job-title"]');
             return titleEl !== null;
         }, cardEl);
 
@@ -265,10 +293,15 @@ export async function automateLinkedInEasyApply(
         let companyName = 'Unknown Company';
         try {
             const cardInfo = await p.evaluate((el) => {
-                const titleEl = el.querySelector('[class*="job-title"], a.job-card-list__title');
-                const companyEl = el.querySelector('.job-card-container__company-name, .job-card-list__subtitle, [class*="company-name"]');
+                const titleEl = el.querySelector('a.job-card-list__title--link, a[href*="/jobs/view/"], a.job-card-list__title, [class*="job-title"]');
+                const companyEl = el.querySelector('.artdeco-entity-lockup__subtitle, .job-card-container__company-name, .job-card-list__subtitle, [class*="company-name"]');
+                // The title anchor's aria-label carries the clean full title; innerText would
+                // double up since LinkedIn renders both an aria-hidden and a visually-hidden span.
+                const title = titleEl
+                    ? (titleEl.getAttribute('aria-label') || (titleEl as HTMLElement).innerText).trim()
+                    : 'Unknown Role';
                 return {
-                    title: titleEl ? (titleEl as HTMLElement).innerText.trim() : 'Unknown Role',
+                    title,
                     company: companyEl ? (companyEl as HTMLElement).innerText.trim() : 'Unknown Company'
                 };
             }, cardEl);

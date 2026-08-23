@@ -125,7 +125,7 @@ public class NaukriResumeService {
         String name      = user != null && notBlank(user.getName())  ? user.getName()  : "Sanket";
         String email     = user != null && notBlank(user.getEmail()) ? user.getEmail() : "";
         String phone     = user != null && notBlank(user.getPhone()) ? user.getPhone() : "";
-        String linkedin  = "https://linkedin.com/in/yourprofile";
+        String linkedin  = "https://www.linkedin.com/in/sanket-shinde-93a88b194/";
         String headline  = buildHeadline(keySkills);
         String summary   = buildSummary(keySkills, jobDescription);
         String skills    = buildSkillsLatex(keySkills);
@@ -172,25 +172,59 @@ public class NaukriResumeService {
         return "\\textbf{Key Skills:} " + escaped;
     }
 
+    /**
+     * Expects user.getExperience() as one or more blocks separated by a blank line, each
+     * block's first line being "Title :: Company :: Dates" followed by "-" bullet lines.
+     * (Previously this always emitted one hardcoded "Software Engineer / Present / Company"
+     * heading and dumped every line under it, regardless of the real title/company/dates.)
+     */
     private String buildExperienceLatex(User user) {
         if (user == null || !notBlank(user.getExperience())) return "";
-        String[] lines = user.getExperience().split("\\n");
+        String[] blocks = user.getExperience().trim().split("\\n\\s*\\n");
         StringBuilder sb = new StringBuilder();
-        sb.append("\\resumeSubheading{Software Engineer}{Present}{Company}{Location}\n");
-        sb.append("\\resumeItemListStart\n");
-        for (String line : lines) {
-            String trimmed = line.trim().replaceFirst("^[-*•]\\s*", "");
-            if (notBlank(trimmed)) {
-                sb.append("  \\resumeItem{").append(escapeLatex(trimmed)).append("}\n");
+        for (String block : blocks) {
+            String[] lines = block.trim().split("\\n");
+            if (lines.length == 0 || !notBlank(lines[0])) continue;
+
+            String[] headerParts = lines[0].trim().split("::");
+            String title   = headerParts.length > 0 ? headerParts[0].trim() : "Software Engineer";
+            String company = headerParts.length > 1 ? headerParts[1].trim() : "";
+            String dates   = headerParts.length > 2 ? headerParts[2].trim() : "";
+
+            sb.append("\\resumeSubheading{").append(escapeLatex(title)).append("}{")
+              .append(escapeLatex(dates)).append("}{").append(escapeLatex(company)).append("}{}\n");
+            sb.append("\\resumeItemListStart\n");
+            for (int i = 1; i < lines.length; i++) {
+                String trimmed = lines[i].trim().replaceFirst("^[-*•]\\s*", "");
+                if (notBlank(trimmed)) {
+                    sb.append("  \\resumeItem{").append(escapeLatex(trimmed)).append("}\n");
+                }
             }
+            // \resumeItemListEnd (-5pt) and the next \resumeSubheading (-2pt) both carry
+            // negative \vspace, so a net positive offset needs to overcome both to actually
+            // separate back-to-back entries instead of crowding them together.
+            sb.append("\\resumeItemListEnd\\vspace{12pt}\n");
         }
-        sb.append("\\resumeItemListEnd");
         return sb.toString();
     }
 
+    /**
+     * Expects user.getEducation() as one or more blocks separated by a blank line, each
+     * formatted as "Degree :: School :: Dates".
+     */
     private String buildEducationLatex(User user) {
         if (user == null || !notBlank(user.getEducation())) return "";
-        return "\\resumeSubheading{" + escapeLatex(user.getEducation().trim()) + "}{}{}{}" ;
+        String[] blocks = user.getEducation().trim().split("\\n\\s*\\n");
+        StringBuilder sb = new StringBuilder();
+        for (String block : blocks) {
+            String[] parts = block.trim().replace("\n", " ").split("::");
+            String degree = parts.length > 0 ? parts[0].trim() : block.trim();
+            String school = parts.length > 1 ? parts[1].trim() : "";
+            String dates  = parts.length > 2 ? parts[2].trim() : "";
+            sb.append("\\resumeSubheading{").append(escapeLatex(degree)).append("}{")
+              .append(escapeLatex(dates)).append("}{").append(escapeLatex(school)).append("}{}\n");
+        }
+        return sb.toString();
     }
 
     // ── PDF compilation ──────────────────────────────────────────────────────
@@ -383,7 +417,7 @@ public class NaukriResumeService {
         String name      = user != null && notBlank(user.getName())  ? user.getName()  : "Sanket";
         String email     = user != null && notBlank(user.getEmail()) ? user.getEmail() : "";
         String phone     = user != null && notBlank(user.getPhone()) ? user.getPhone() : "";
-        String linkedin  = "https://linkedin.com/in/yourprofile";
+        String linkedin  = "https://www.linkedin.com/in/sanket-shinde-93a88b194/";
         
         // Build customized headline using the jobTitle
         String headline = jobTitle;

@@ -143,18 +143,24 @@ export async function scrapeRecommendedJob(
             }
         }
 
-        // Key skills — Naukri shows them as chips/tags
+        // Key skills — Naukri shows them as chips/tags under a "Key Skills" heading.
+        // NOTE: '.chip'/'[class*="chip"]' are intentionally excluded here — Naukri reuses
+        // "chip"-styled elements for the employer rating/company-type badges too (e.g.
+        // "3.0★ | Indian MNC | Service | Fortune India 500 (2023)"), so that generic
+        // selector was previously scraping company badges instead of actual skills.
         const skills: string[] = [];
         const seen = new Set<string>();
+        const badgeWords = ['mnc', 'fortune', 'rated by women', 'work-life balance', 'corporate'];
         const skillSelectors = [
-            '.chip','[class*="chip"]',
             '.key-skill a','[class*="keySkill"] a','[class*="keySkill"] span',
-            '[class*="key-skill"] a','.tags li','.skill-block a',
+            '[class*="key-skill"] a','.skill-block a','.tags li',
         ];
         for (const sel of skillSelectors) {
             document.querySelectorAll(sel).forEach(el => {
                 const text = el.textContent?.trim() || '';
-                if (text && text.length < 60 && !seen.has(text)) { seen.add(text); skills.push(text); }
+                const lower = text.toLowerCase();
+                const looksLikeBadge = badgeWords.some(w => lower.includes(w)) || /^\d+(\.\d+)?\+?$/.test(text);
+                if (text && text.length < 60 && !looksLikeBadge && !seen.has(text)) { seen.add(text); skills.push(text); }
             });
             if (skills.length >= 5) break;
         }
